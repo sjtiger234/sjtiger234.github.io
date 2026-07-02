@@ -7,14 +7,14 @@
 /* ---------- 색상 토큰 ---------- */
 :root {
   /* 배경 */
-  --bg:        #F5F2EB;   /* 따뜻한 아이보리 */
+  --bg:        #EEF5FB;   /* 맑고 산뜻한 라이트 블루 */
   --surface:   #FFFFFF;   /* 카드 */
-  --surface-2: #EEE9DF;   /* 서브 배경 */
+  --surface-2: #E1EDF7;   /* 서브 배경 */
   --nav-bg:    #1C2340;   /* 헤더 다크 네이비 */
 
   /* 골드 (라이트 배경용으로 진하게) */
-  --gold:        #9E7B2A;
-  --gold-light:  #C09A3A;
+  --gold:        #8A6B1E;
+  --gold-light:  #B08A28;
   --gold-dim:    rgba(158,123,42,.09);
   --gold-border: rgba(158,123,42,.20);
 
@@ -28,9 +28,9 @@
   --nav-hover:  #E4C97A;
 
   /* 기타 */
-  --border:  rgba(0,0,0,.07);
-  --shadow:  0 2px 16px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
-  --shadow-hover: 0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
+  --border:  rgba(0,0,0,.08);
+  --shadow:  0 2px 16px rgba(30,80,140,.07), 0 1px 4px rgba(0,0,0,.04);
+  --shadow-hover: 0 8px 32px rgba(30,80,140,.13), 0 2px 8px rgba(0,0,0,.06);
 
   --serif: "Playfair Display","Noto Serif KR",serif;
   --sans:  "Noto Sans KR",sans-serif;

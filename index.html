@@ -139,7 +139,35 @@
 
 <!-- 포스트 목록 -->
 <main>
-  <section class="posts-section">
+  
+  <!-- ===== 영상 프레젠테이션 배너 ===== -->
+  <section style="max-width:1140px;margin:0 auto 0;padding:40px 32px 0">
+    <a href="video-retechak.html" target="_blank"
+       style="display:flex;align-items:center;justify-content:space-between;gap:24px;
+              background:linear-gradient(135deg,#0f1e3a 0%,#1a2d55 100%);
+              border:1px solid rgba(200,169,90,.3);border-radius:12px;
+              padding:28px 36px;text-decoration:none;
+              transition:border-color .2s,box-shadow .2s"
+       onmouseover="this.style.borderColor='#C8A95A';this.style.boxShadow='0 8px 32px rgba(200,169,90,.15)'"
+       onmouseout="this.style.borderColor='rgba(200,169,90,.3)';this.style.boxShadow='none'">
+      <div>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:#C8A95A;margin:0 0 10px;display:flex;align-items:center;gap:8px">
+          <span style="display:inline-block;width:20px;height:1px;background:#C8A95A"></span>
+          애니메이션 프레젠테이션
+        </p>
+        <h3 style="font-family:'Playfair Display','Noto Serif KR',serif;font-size:clamp(1.2rem,2.5vw,1.7rem);font-weight:700;color:#F0EBE0;margin:0 0 8px;line-height:1.3">
+          월급쟁이 재테크 <em style="font-style:italic;color:#C8A95A">필수 5단계</em>
+        </h3>
+        <p style="font-size:.88rem;color:#8E98B8;margin:0">비상금 → 연금저축 → ETF → 복리 → 자동이체 — 5분 안에 정리하는 재테크 로드맵</p>
+      </div>
+      <div style="flex-shrink:0;width:64px;height:64px;border-radius:50%;background:rgba(200,169,90,.15);border:1.5px solid #C8A95A;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#C8A95A">
+        ▶
+      </div>
+    </a>
+  </section>
+  <!-- ===== /영상 프레젠테이션 배너 ===== -->
+
+<section class="posts-section">
 
     <div class="section-header">
       <span class="section-label">모든 글</span>

@@ -599,3 +599,122 @@ img { max-width: 100%; display: block; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ============================================
+   모바일 전용 — 표·카드·아티클 최적화
+   ============================================ */
+
+/* 표 가로 스크롤 래퍼 (기본) */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 24px 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.table-wrap table { margin: 0; }
+
+/* 아티클 내 일반 표 기본 스타일 */
+.article table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .88rem;
+  margin: 24px 0;
+}
+.article table th {
+  background: var(--navy, #1C2F52);
+  color: #E4C97A;
+  font-family: var(--mono);
+  font-size: .74rem;
+  letter-spacing: .05em;
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 500;
+}
+.article table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  vertical-align: top;
+}
+.article table tr:last-child td { border-bottom: none; }
+.article table td:first-child { color: var(--text-1); font-weight: 600; }
+
+/* ---- 480px 이하: 표 → 카드형 변환 ---- */
+@media (max-width: 480px) {
+
+  /* 테이블 카드 변환 공통 */
+  .article table,
+  .article table tbody,
+  .article table tr { display: block; width: 100%; }
+
+  .article table thead { display: none; }
+
+  .article table tr {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .article table td {
+    display: block;
+    border-bottom: none;
+    padding: 3px 0;
+    white-space: normal;
+    font-size: .85rem;
+  }
+
+  .article table td:first-child {
+    font-weight: 700;
+    color: var(--gold);
+    font-size: .8rem;
+    letter-spacing: .04em;
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--gold-border);
+  }
+
+  /* 피처드 카드 모바일 */
+  .post-featured { padding: 24px 20px; }
+  .featured-title { font-size: 1.3rem; }
+
+  /* 카드 그리드 모바일 */
+  .post-card { padding: 20px 18px; }
+  .card-title { font-size: 1rem; }
+
+  /* 아티클 헤더 */
+  .article-deco-num { display: none; }
+  .article h2 { font-size: 1.2rem; margin: 36px 0 12px; }
+  .article h2::before { height: 1em; }
+
+  /* callout */
+  .callout { padding: 16px 18px; font-size: .86rem; }
+  .callout::before { display: none; }
+
+  /* hero 통계 세로 배열 */
+  .hero-stats { flex-wrap: wrap; gap: 18px 28px; }
+
+  /* 섹션 헤더 */
+  .section-header { flex-direction: column; gap: 6px; }
+
+  /* 푸터 */
+  .footer-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .footer-nav { flex-wrap: wrap; gap: 12px; }
+}
+
+/* ---- 360px 이하 초소형 ---- */
+@media (max-width: 360px) {
+  .header-inner { padding: 0 14px; }
+  .site-header nav { gap: 10px; }
+  .site-header nav a { font-size: .66rem; }
+  .hero-inner { padding: 44px 16px 48px; }
+  .posts-section { padding: 32px 14px 48px; }
+  .article { padding: 28px 16px 48px; }
+  .article-header-section { padding: 36px 16px 28px; }
+  .article-nav { padding: 16px 14px; flex-direction: column; gap: 10px; }
+  .hero-title { font-size: 2rem; }
+}
+

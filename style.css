@@ -600,6 +600,17 @@ img { max-width: 100%; display: block; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
+
+/* step-list 텍스트 래핑 수정 */
+.step-list li > div,
+.step-list li > span {
+  flex: 1;
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+.step-list li strong { white-space: nowrap; }
+
 /* ============================================
    모바일 전용 — 표·카드·아티클 최적화
    ============================================ */

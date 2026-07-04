@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S&P 500 투자 전망 2026 완전 분석 — 월가 7,555 목표의 근거와 리스크 | 차곡차곡 재테크</title>
+<meta name="description" content="2026년 7월 기준 S&P 500 현황(7,484p)과 골드만삭스·모건스탠리·JP모건 등 월가 주요 기관 목표지수, AI 혁명 수혜, 매그니피센트7 분화, 투자 전략까지 경제 전문가 시각으로 총정리했습니다.">
+<link rel="stylesheet" href="style.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9516509200997464" crossorigin="anonymous"></script>
+<style>
+/* ── 이 글 전용 스타일 ── */
+.sp-hero{
+  background:linear-gradient(135deg,#0a1628 0%,#0f2040 50%,#0a1628 100%);
+  border-radius:12px;padding:36px 40px;margin:32px 0;
+  border:1px solid rgba(59,130,246,.2);position:relative;overflow:hidden;
+}
+.sp-hero::before{
+  content:'S&P 500';position:absolute;right:-20px;top:50%;transform:translateY(-50%);
+  font-family:'Playfair Display',serif;font-size:9rem;font-weight:900;
+  color:rgba(59,130,246,.06);pointer-events:none;letter-spacing:-.02em;white-space:nowrap;
+}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:28px 0}
+.kpi-box{
+  background:var(--surface-2);border:1px solid var(--gold-border);
+  border-radius:8px;padding:18px 16px;
+}
+.kpi-box .label{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
+.kpi-box .value{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--gold);line-height:1}
+.kpi-box .sub{font-size:.76rem;color:var(--text-3);margin-top:5px}
+.kpi-box.blue .value{color:#3B82F6}
+.kpi-box.blue{border-color:rgba(59,130,246,.25)}
+.kpi-box.green .value{color:#22c55e}
+.kpi-box.green{border-color:rgba(34,197,94,.25)}
+.kpi-box.red .value{color:#ef4444}
+.kpi-box.red{border-color:rgba(239,68,68,.2)}
+
+/* 기관 목표지수 바 차트 */
+.target-chart{margin:28px 0}
+.target-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.target-name{font-family:var(--mono);font-size:.75rem;color:var(--text-2);min-width:110px;text-align:right}
+.target-bar-wrap{flex:1;height:28px;background:var(--surface-2);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.target-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:10px;
+  font-family:var(--mono);font-size:.75rem;font-weight:600;color:#fff;
+  transition:width 1.2s cubic-bezier(.22,1,.36,1);width:0}
+.target-val{font-family:var(--mono);font-size:.8rem;color:var(--gold);min-width:48px;font-weight:700}
+.bar-bull{background:linear-gradient(to right,#1d4ed8,#3b82f6)}
+.bar-mid{background:linear-gradient(to right,#1e40af,#2563eb)}
+.bar-base{background:linear-gradient(to right,#92400e,#b45309)}
+.bar-bear{background:linear-gradient(to right,#7f1d1d,#b91c1c)}
+
+/* 시나리오 카드 */
+.scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}
+.sc-card{border-radius:10px;padding:22px 20px;border:1px solid}
+.sc-bull{background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.25)}
+.sc-base{background:rgba(59,130,246,.05);border-color:rgba(59,130,246,.25)}
+.sc-bear{background:rgba(239,68,68,.05);border-color:rgba(239,68,68,.2)}
+.sc-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;font-weight:600}
+.sc-bull .sc-label{color:#22c55e}
+.sc-base .sc-label{color:#3b82f6}
+.sc-bear .sc-label{color:#ef4444}
+.sc-num{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;line-height:1;margin-bottom:8px}
+.sc-bull .sc-num{color:#22c55e}
+.sc-base .sc-num{color:#3b82f6}
+.sc-bear .sc-num{color:#ef4444}
+.sc-cond{font-size:.82rem;color:var(--text-2);line-height:1.65}
+
+/* 수익률 히스토리 바 */
+.ret-chart{margin:24px 0}
+.ret-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.ret-year{font-family:var(--mono);font-size:.74rem;color:var(--text-3);min-width:40px}
+.ret-bar-wrap{flex:1;height:22px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.ret-bar-pos{height:100%;border-radius:3px;background:linear-gradient(to right,#1d4ed8,#60a5fa);display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:.72rem;color:#fff;font-weight:600}
+.ret-bar-neg{height:100%;border-radius:3px;background:linear-gradient(to right,#b91c1c,#ef4444);display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:.72rem;color:#fff;font-weight:600;margin-left:auto}
+
+/* 섹터 테이블 */
+.sector-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:.87rem}
+.sector-table th{background:#0f1e3a;color:#93c5fd;font-family:var(--mono);font-size:.72rem;letter-spacing:.05em;padding:10px 12px;text-align:left;font-weight:500}
+.sector-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:middle}
+.sector-table tr:last-child td{border-bottom:none}
+.sector-table td:first-child{color:var(--text-1);font-weight:600}
+.badge{display:inline-block;font-family:var(--mono);font-size:.65rem;padding:2px 8px;border-radius:20px;font-weight:600}
+.badge-buy{background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+.badge-hold{background:rgba(234,179,8,.1);color:#eab308;border:1px solid rgba(234,179,8,.3)}
+.badge-watch{background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+
+/* 매그7 테이블 */
+.mag7-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:.86rem}
+.mag7-table th{background:#0f1e3a;color:#93c5fd;font-family:var(--mono);font-size:.72rem;padding:10px 12px;text-align:left;font-weight:500;letter-spacing:.04em}
+.mag7-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text-2)}
+.mag7-table tr:last-child td{border-bottom:none}
+.mag7-table td:first-child{color:var(--text-1);font-weight:700}
+.pos{color:#22c55e;font-weight:700}
+.neg{color:#ef4444;font-weight:700}
+.neu{color:#eab308;font-weight:700}
+
+.insight-box{
+  background:linear-gradient(135deg,rgba(59,130,246,.07),rgba(16,185,129,.05));
+  border:1px solid rgba(59,130,246,.2);border-left:3px solid #3b82f6;
+  border-radius:0 8px 8px 0;padding:18px 22px;margin:24px 0;
+  font-size:.9rem;color:var(--text-2);line-height:1.8;
+}
+.insight-box strong{color:#93c5fd}
+.warn-red{
+  background:rgba(239,68,68,.05);border-left:3px solid #ef4444;
+  padding:16px 20px;margin:20px 0;border-radius:0 6px 6px 0;
+  font-size:.88rem;color:var(--text-2);line-height:1.78;
+}
+.warn-red strong{color:#ef4444}
+
+/* 투자전략 체크 */
+.strategy-list{list-style:none;padding:0;margin:16px 0}
+.strategy-list li{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;font-size:.9rem;color:var(--text-2);line-height:1.7}
+.strategy-list li::before{content:'→';color:var(--gold);font-size:1rem;margin-top:1px;flex-shrink:0}
+.strategy-list li strong{color:var(--text-1)}
+
+@media(max-width:480px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .scenario-grid{grid-template-columns:1fr}
+  .sp-hero{padding:24px 20px}
+  .sp-hero::before{display:none}
+  .target-name{min-width:80px;font-size:.68rem}
+  .sector-table thead{display:none}
+  .sector-table,.sector-table tbody,.sector-table tr{display:block;width:100%}
+  .sector-table tr{background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;padding:12px 14px}
+  .sector-table td{display:block;border-bottom:none;padding:3px 0;font-size:.83rem}
+  .sector-table td:first-child{color:var(--gold);font-size:.78rem;font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--gold-border);margin-bottom:4px}
+  .mag7-table thead{display:none}
+  .mag7-table,.mag7-table tbody,.mag7-table tr{display:block;width:100%}
+  .mag7-table tr{background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;padding:12px 14px}
+  .mag7-table td{display:block;border-bottom:none;padding:3px 0;font-size:.83rem}
+  .mag7-table td:first-child{color:var(--gold);font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--gold-border);margin-bottom:4px}
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>차곡차곡 재테크</a>
+    <nav>
+      <a href="index.html">홈</a><a href="about.html">소개</a>
+      <a href="contact.html">문의</a><a href="privacy.html">개인정보</a>
+    </nav>
+  </div>
+</header>
+
+<section class="article-header-section">
+  <div class="article-header-inner">
+    <div class="article-deco-num">014</div>
+    <p class="article-eyebrow">미국주식 · No. 014</p>
+    <h1>S&P 500 투자 전망 2026 완전 분석<br>— 월가 7,555 목표의 근거와 리스크</h1>
+    <div class="article-meta">
+      <span>2026.07.04</span><span>읽는 시간 약 15분</span><span>경제 전문가 시각 분석</span>
+    </div>
+  </div>
+</section>
+
+<main>
+<article class="article">
+
+<p>2026년 7월 2일, S&P 500 지수는 7,484포인트로 마감했습니다. 1년 전과 비교하면 +19.18% 상승한 수준입니다. <cite index="4-1">미국의 주요 주식 시장 지수는 2026년 7월 2일 7,484포인트로 보합 마감했으며, 1년 전보다 19.18% 높은 수준입니다.</cite> 월가 주요 기관들의 컨센서스 평균 목표지수는 7,555로, 현재가 대비 약 9%의 추가 상승 여지를 제시하고 있습니다. 이 글에서는 S&P 500의 현황과 수익성, 상승·하락 요인, 매그니피센트7의 분화, 그리고 투자자별 전략을 경제 전문가 시각으로 총정리합니다.</p>
+
+<!-- 핵심 지표 -->
+<div class="kpi-grid">
+  <div class="kpi-box blue">
+    <div class="label">현재 지수 (7/2 종가)</div>
+    <div class="value">7,484</div>
+    <div class="sub">1년 수익률 +19.18%</div>
+  </div>
+  <div class="kpi-box">
+    <div class="label">월가 컨센서스 목표</div>
+    <div class="value">7,555</div>
+    <div class="sub">현재 대비 상승 여지 +9%</div>
+  </div>
+  <div class="kpi-box green">
+    <div class="label">2026년 EPS 성장 전망</div>
+    <div class="value">+14%</div>
+    <div class="sub">주당순이익 약 $306 예상</div>
+  </div>
+  <div class="kpi-box red">
+    <div class="label">6월 비농업 고용 (실제)</div>
+    <div class="value">57K</div>
+    <div class="sub">예상치 113K 크게 하회</div>
+  </div>
+</div>
+
+<h2>1. 월가 주요 기관별 2026년 목표지수</h2>
+
+<p><cite index="1-1">블룸버그의 최신 데이터에 따르면 주요 투자 전략가들의 S&P 500 연말 2026년 목표치는 평균 7,555입니다. 범위는 최저 7,000에서 최고 8,100까지이며 현재 수준에서 9% 상승을 의미합니다.</cite> 아래 표에서 기관별 전망을 한눈에 확인하세요.</p>
+
+<div class="target-chart" id="targetChart">
+  <div class="target-row">
+    <span class="target-name">오펜하이머</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-bull" style="width:0%" data-w="100%">8,100</div></div>
+    <span class="target-val">8,100</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">도이체방크</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-bull" style="width:0%" data-w="96%">8,000</div></div>
+    <span class="target-val">8,000</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">JP모건 (강세)</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-bull" style="width:0%" data-w="96%">8,000</div></div>
+    <span class="target-val">8,000</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">모건스탠리</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-mid" style="width:0%" data-w="92%">7,800</div></div>
+    <span class="target-val">7,800</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">야데니리서치</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-mid" style="width:0%" data-w="91%">7,700</div></div>
+    <span class="target-val">7,700</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">골드만삭스</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-mid" style="width:0%" data-w="90%">7,600</div></div>
+    <span class="target-val">7,600</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">컨센서스 평균</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-base" style="width:0%" data-w="89%">7,555</div></div>
+    <span class="target-val" style="color:var(--gold)">7,555 ★</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">JP모건 (기본)</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-base" style="width:0%" data-w="88%">7,500</div></div>
+    <span class="target-val">7,500</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">HSBC</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-base" style="width:0%" data-w="88%">7,500</div></div>
+    <span class="target-val">7,500</span>
+  </div>
+  <div class="target-row">
+    <span class="target-name">뱅크오브아메리카</span>
+    <div class="target-bar-wrap"><div class="target-bar bar-bear" style="width:0%" data-w="79%">7,100</div></div>
+    <span class="target-val">7,100</span>
+  </div>
+</div>
+
+<div class="insight-box">
+  <strong>전문가 시각:</strong> 기관별 목표지수 스프레드(7,100~8,100)가 1,000포인트에 달한다는 점이 주목됩니다. 이는 그만큼 2026년 하반기 시장의 불확실성이 크다는 의미입니다. <cite index="8-1">더 가능성 있는 시나리오는 S&P 500이 7,300~7,800 범위에서 마감하는 것입니다.</cite> 현재 7,484에서 컨센서스(7,555)까지는 +1% 수준이므로, 큰 상승보다는 변동성 관리가 핵심 전략이 됩니다.
+</div>
+
+<h2>2. S&P 500 역사적 수익률 — 장기 투자의 위력</h2>
+
+<p>S&P 500이 장기 투자의 대명사로 불리는 이유는 역사적 수익률 데이터에 있습니다. 단기 조정은 반드시 있었지만, 10년 이상 보유 시 손실을 본 구간은 거의 없었습니다.</p>
+
+<div class="ret-chart">
+  <div class="ret-row"><span class="ret-year">2020</span><div class="ret-bar-wrap"><div class="ret-bar-pos" style="width:62%">+18.4%</div></div></div>
+  <div class="ret-row"><span class="ret-year">2021</span><div class="ret-bar-wrap"><div class="ret-bar-pos" style="width:90%">+26.9%</div></div></div>
+  <div class="ret-row"><span class="ret-year">2022</span><div class="ret-bar-wrap"><div class="ret-bar-neg" style="width:56%">-19.4%</div></div></div>
+  <div class="ret-row"><span class="ret-year">2023</span><div class="ret-bar-wrap"><div class="ret-bar-pos" style="width:80%">+24.2%</div></div></div>
+  <div class="ret-row"><span class="ret-year">2024</span><div class="ret-bar-wrap"><div class="ret-bar-pos" style="width:85%">+23.3%</div></div></div>
+  <div class="ret-row"><span class="ret-year">2025</span><div class="ret-bar-wrap"><div class="ret-bar-pos" style="width:55%">+14.9%</div></div></div>
+  <div class="ret-row"><span class="ret-year">2026 YTD</span><div class="ret-bar-wrap"><div class="ret-bar-pos" style="width:62%">+19.2%</div></div></div>
+  <div class="ret-row" style="margin-top:8px">
+    <span class="ret-year" style="color:var(--gold)">30년 평균</span>
+    <div class="ret-bar-wrap"><div class="ret-bar-pos" style="width:38%;background:linear-gradient(to right,#92400e,#d97706)">+10.5%/년</div></div>
+  </div>
+</div>
+
+<p style="font-size:.82rem;color:var(--text-3)">※ 2026 YTD는 7월 2일 기준. 연간 수익률은 가격 수익률 기준이며 배당 재투자 효과는 별도입니다.</p>
+
+<h2>3. 상승 동력 — 왜 월가는 낙관하는가</h2>
+
+<h2>① AI 혁명의 2단계 전환 — 인프라에서 수익으로</h2>
+<p><cite index="15-1">2026년은 AI 기술이 인프라 구축 단계에서 실제 비즈니스 적용 단계로 전환되는 중요한 시점으로 평가받고 있으며, 이에 따라 'AI Enablers'에서 'AI Adopters'로 투자 흐름이 바뀌고 있습니다.</cite> 지금까지는 엔비디아·AMD 같은 AI 칩 제조사가 수혜를 봤다면, 앞으로는 AI를 활용해 실제 비용을 절감하고 매출을 늘리는 기업들이 새로운 수혜주가 될 것입니다.</p>
+
+<h2>② 기업 실적의 구조적 성장</h2>
+<p><cite index="1-1">월스트리트의 예측에 따르면 S&P 500 주당 순이익은 2026년에 약 306달러로, 현재 컨센서스 추정치인 272달러에서 12.5% 증가할 것으로 예상됩니다.</cite> <cite index="14-1">애널리스트들은 S&P500 기업의 2026년 이익 증가율을 14%로 전망하며, 연준은 2025년 1.7%였던 성장률이 2026년 2.3%로 높아질 것으로 보고 있습니다.</cite></p>
+
+<h2>③ 연준 금리 인하 기대 — 단 1~2회에 그칠 전망</h2>
+<p><cite index="8-1">연준은 12월 금리 인하 후 3.5%~3.75%에서 금리가 안정되고, 2026년에는 한 번 더 금리 인하가 있을 것으로 예상됩니다.</cite> 완전한 금리 인하 사이클보다는 '제한적 완화' 수준에 머물 것으로 보입니다. 6월 비농업 고용이 예상치(113K)를 크게 밑도는 57K를 기록한 것은 경제 둔화 신호이지만, 동시에 연준의 금리 인하 명분을 강화할 수 있습니다.</p>
+
+<h2>4. 매그니피센트7 분화 — 지금 어디에 있나</h2>
+
+<p><cite index="9-1">미국 빅테크 기업들의 인공지능(AI) 투자 확대에 대한 시장의 기대가 흔들리면서 '매그니피센트7' 시가총액이 이달 들어 2조 3,000억 달러 증발했습니다. 투자자들이 천문학적인 AI 인프라 투자에 대한 수익성을 검증하기 시작하면서 대형 기술주에서 자금이 이탈하는 반면, AI 공급망의 핵심인 반도체 업종은 오히려 강세를 이어가고 있습니다.</cite></p>
+
+<table class="mag7-table">
+  <thead>
+    <tr><th>기업</th><th>7월 등락 (추정)</th><th>AI 수혜 포지션</th><th>핵심 이슈</th><th>투자 시각</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>엔비디아 (NVDA)</td><td class="neg">-13%</td><td>AI 칩 1위</td><td>수출 규제, 차익 실현</td><td><span class="badge badge-buy">매수 우위</span></td></tr>
+    <tr><td>마이크로소프트 (MSFT)</td><td class="neg">-20%</td><td>Azure AI</td><td>AI 투자 ROI 의문</td><td><span class="badge badge-hold">중립</span></td></tr>
+    <tr><td>애플 (AAPL)</td><td class="neg">-8%</td><td>엣지 AI</td><td>중국 리스크</td><td><span class="badge badge-hold">중립</span></td></tr>
+    <tr><td>아마존 (AMZN)</td><td class="neg">-8%</td><td>AWS AI</td><td>투자 비용 증가</td><td><span class="badge badge-hold">중립</span></td></tr>
+    <tr><td>구글 (GOOGL)</td><td class="pos">강세</td><td>Gemini, TPU</td><td>반독점 이슈 해소</td><td><span class="badge badge-buy">매수 우위</span></td></tr>
+    <tr><td>메타 (META)</td><td class="neu">혼조</td><td>AI 광고</td><td>투자 확대 지속</td><td><span class="badge badge-hold">중립</span></td></tr>
+    <tr><td>테슬라 (TSLA)</td><td class="neg">약세</td><td>자율주행 AI</td><td>FSD 상용화 지연</td><td><span class="badge badge-watch">신중</span></td></tr>
+  </tbody>
+</table>
+
+<div class="insight-box">
+  <strong>핵심 분석:</strong> 7월 매그니피센트7의 급락은 공통 원인이 있습니다. <cite index="9-1">시장에서는 다음 달 시작되는 2분기 실적 시즌이 AI 투자 확대가 실제 수익으로 이어지고 있는지를 확인하는 분수령이 될 것으로 보고 있습니다.</cite> 이 실적 시즌 결과가 향후 3~6개월 S&P 500 방향성을 결정할 것입니다.
+</div>
+
+<h2>5. 섹터별 투자 매력도 — 2026년 하반기 관점</h2>
+
+<table class="sector-table">
+  <thead>
+    <tr><th>섹터</th><th>S&P 500 비중</th><th>2026년 이익 성장</th><th>주요 동력</th><th>평가</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>정보기술 (IT)</td><td>31%</td><td>+17%</td><td>AI 인프라, 클라우드</td><td><span class="badge badge-buy">비중확대</span></td></tr>
+    <tr><td>커뮤니케이션</td><td>9%</td><td>+15%</td><td>구글 AI, 메타 광고</td><td><span class="badge badge-buy">비중확대</span></td></tr>
+    <tr><td>헬스케어</td><td>12%</td><td>+12%</td><td>AI 신약개발, GLP-1</td><td><span class="badge badge-buy">비중확대</span></td></tr>
+    <tr><td>금융</td><td>13%</td><td>+10%</td><td>금리 유지, 대출 성장</td><td><span class="badge badge-hold">중립</span></td></tr>
+    <tr><td>산업재</td><td>9%</td><td>+9%</td><td>AI 데이터센터 건설</td><td><span class="badge badge-hold">중립</span></td></tr>
+    <tr><td>임의소비재</td><td>10%</td><td>+8%</td><td>소비자 지출 회복</td><td><span class="badge badge-hold">중립</span></td></tr>
+    <tr><td>유틸리티</td><td>3%</td><td>+5%</td><td>AI 전력 수요 수혜</td><td><span class="badge badge-buy">비중확대</span></td></tr>
+    <tr><td>에너지</td><td>4%</td><td>-3%</td><td>유가 불안정</td><td><span class="badge badge-watch">비중축소</span></td></tr>
+    <tr><td>필수소비재</td><td>6%</td><td>+4%</td><td>방어적 성격</td><td><span class="badge badge-watch">비중축소</span></td></tr>
+  </tbody>
+</table>
+
+<h2>6. 3가지 시나리오 — 어디로 갈까</h2>
+
+<div class="scenario-grid">
+  <div class="sc-card sc-bull">
+    <div class="sc-label">🚀 강세 시나리오</div>
+    <div class="sc-num">8,000~8,100</div>
+    <div class="sc-cond">
+      <strong style="color:#22c55e">조건:</strong><br>
+      • 2분기 EPS 서프라이즈 달성<br>
+      • 연준 연내 2회 금리 인하<br>
+      • AI ROI 가시화<br>
+      • 관세 협상 타결<br><br>
+      <strong style="color:#22c55e">확률 추정: 25%</strong>
+    </div>
+  </div>
+  <div class="sc-card sc-base">
+    <div class="sc-label">📊 기본 시나리오</div>
+    <div class="sc-num">7,300~7,800</div>
+    <div class="sc-cond">
+      <strong style="color:#3b82f6">조건:</strong><br>
+      • 이익 성장 14% 달성<br>
+      • 연준 1회 인하<br>
+      • 변동성 지속, 완만 상승<br>
+      • 매그7 실적 회복 확인<br><br>
+      <strong style="color:#3b82f6">확률 추정: 55%</strong>
+    </div>
+  </div>
+  <div class="sc-card sc-bear">
+    <div class="sc-label">⚠️ 약세 시나리오</div>
+    <div class="sc-num">6,500~7,000</div>
+    <div class="sc-cond">
+      <strong style="color:#ef4444">조건:</strong><br>
+      • AI 투자 ROI 실망<br>
+      • 금리 동결 또는 인상<br>
+      • 고용 악화 심화<br>
+      • 지정학적 리스크 확대<br><br>
+      <strong style="color:#ef4444">확률 추정: 20%</strong>
+    </div>
+  </div>
+</div>
+
+<h2>7. 주요 리스크 요인</h2>
+
+<div class="warn-red">
+  <strong>① AI 투자 ROI 의문</strong> — 2023~2026년 빅테크의 AI 인프라 투자 총액은 수조 달러에 달합니다. 그러나 이 투자가 실제 수익으로 연결된다는 증거가 아직 충분하지 않습니다. 7월 실적 시즌이 분수령입니다.
+</div>
+<div class="warn-red">
+  <strong>② 고용 지표 악화</strong> — 6월 비농업 고용이 예상치의 절반인 57K에 그쳤습니다. 실업률도 4.2%로 상승 중입니다. 소비 지출 둔화로 이어질 경우 기업 실적에 직격탄이 됩니다.
+</div>
+<div class="warn-red">
+  <strong>③ 연준 정책 불확실성</strong> — 2026년 5월 파월 연준 의장 임기 만료 이후 차기 의장 인선 문제가 통화정책 독립성 우려를 키우고 있습니다. <cite index="15-1">인플레이션이 예상보다 끈질기게 유지될 경우 금리 인하 사이클이 중단될 수 있습니다.</cite>
+</div>
+<div class="warn-red">
+  <strong>④ 고밸류에이션 부담</strong> — <cite index="8-1">8,000 달성을 위해서는 주가수익비율(PER)이 25~26배까지 상승해야 하는데, 현재 22~23배보다 높고 장기 평균인 18~19배를 훨씬 웃도는 수치입니다.</cite> 과열 해소 조정이 언제든 올 수 있습니다.
+</div>
+
+<h2>8. 투자자별 전략 — 어떻게 접근할 것인가</h2>
+
+<table class="sector-table">
+  <thead>
+    <tr><th>투자자 유형</th><th>추천 접근법</th><th>핵심 포인트</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>장기 적립식 (10년+)</td><td>S&P 500 ETF 월 정액 매수 유지</td><td>변동성 무시, 복리 극대화. 역사적으로 10년 보유 손실 거의 없음</td></tr>
+    <tr><td>중기 투자 (3~5년)</td><td>현재가에서 3~4회 분할 매수</td><td>7,000 이하 진입 시 비중 확대. IT·헬스케어 중심 섹터 ETF 병행</td></tr>
+    <tr><td>단기 트레이딩</td><td>7월 실적 시즌 결과 확인 후 진입</td><td>실적 발표 전 관망, AI 기업 EPS 서프라이즈 여부가 방아쇠</td></tr>
+    <tr><td>연금저축·IRP 계좌</td><td>S&P 500 추종 ETF 비중 30~50%</td><td>환율 헤지 상품 vs 비헤지 상품 선택 중요. 장기일수록 비헤지 유리</td></tr>
+    <tr><td>리스크 헤징 필요</td><td>S&P 500 + 금(Gold) ETF 혼합</td><td>S&P 500과 금은 역상관 관계. 변동성 국면에서 포트폴리오 완충</td></tr>
+  </tbody>
+</table>
+
+<ul class="strategy-list">
+  <li><strong>지금 당장 전액 투자하지 마세요.</strong> 7,484는 역사적 고점권입니다. 3~6개월에 걸친 분할 매수로 진입 단가를 낮추는 전략이 유효합니다.</li>
+  <li><strong>7월 실적 시즌(7~8월)이 변곡점입니다.</strong> 빅테크의 2분기 실적이 AI 수익화를 증명하면 8,000 돌파 시도, 실망스럽다면 7,000 테스트 가능성도 있습니다.</li>
+  <li><strong>연금저축·IRP 계좌 활용이 핵심입니다.</strong> S&P 500 ETF를 연금 계좌에서 매수하면 세액공제 혜택 + 과세이연 효과로 실질 수익률이 크게 올라갑니다.</li>
+  <li><strong>환율을 반드시 고려하세요.</strong> 달러 약세 국면에서는 원화 환산 수익률이 하락할 수 있습니다. 달러 강세 구간에서의 분할 매수가 유리합니다.</li>
+</ul>
+
+<h2>정리하며 — 전문가 최종 시각</h2>
+
+<p>S&P 500 투자의 본질은 "미국 경제와 기업의 장기 성장에 베팅하는 것"입니다. 단기 조정은 언제든 올 수 있지만, 30년 장기 평균 연 수익률 10.5%라는 역사가 말해주듯 시간이 최고의 무기입니다.</p>
+
+<p><cite index="15-1">월스트리트의 컨센서스는 낙관적이지만, 역사적으로 높은 밸류에이션과 다수의 리스크 요인을 감안할 때 조심스러운 낙관론(cautious optimism)이 적절한 태도입니다.</cite></p>
+
+<p>지금 이 순간 S&P 500에 대한 최선의 전략은 단 하나입니다. <strong>가격을 맞추려 하지 말고, 시간을 사세요.</strong></p>
+
+<p class="disclaimer">이 글은 공개된 자료와 월가 주요 기관 전망을 바탕으로 한 정보 제공 목적의 글이며, 특정 종목이나 상품에 대한 매수·매도 추천이 아닙니다. 미국 주식 투자는 환율 리스크를 포함한 원금 손실 가능성이 있으며, 과거 수익률이 미래를 보장하지 않습니다. 투자 결정과 그 결과는 전적으로 본인의 판단과 책임에 따릅니다. (기준일: 2026년 7월 4일)</p>
+</article>
+
+<nav class="article-nav">
+  <a href="post-tiger200.html">← 이전 글: TIGER 200 ETF 분석</a>
+  <span></span>
+</nav>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p>© 2026 차곡차곡 재테크. 이 블로그의 콘텐츠는 정보 제공을 목적으로 하며, 투자 권유가 아닙니다.</p>
+    <nav class="footer-nav">
+      <a href="about.html">소개</a><a href="contact.html">문의</a><a href="privacy.html">개인정보</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+// 바 차트 애니메이션
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      document.querySelectorAll('.target-bar').forEach(bar => {
+        const w = bar.dataset.w;
+        setTimeout(()=>{ bar.style.width = w; }, 200);
+      });
+      observer.disconnect();
+    }
+  });
+}, {threshold: 0.3});
+const chart = document.getElementById('targetChart');
+if(chart) observer.observe(chart);
+</script>
+</body>
+</html>

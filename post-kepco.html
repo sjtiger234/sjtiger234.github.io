@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한국전력(KEPCO) 주가 전망 2026 완전 분석 — 원전 르네상스의 핵심 수혜주 | 차곡차곡 재테크</title>
+<meta name="description" content="한국전력 현재가 38,250원, 컨센서스 목표주가 54,019원(상승여력 +41%). 1Q26 영업이익 3.78조원, 원전 이용률 87%, 체코 원전 26조원 수주. 상승 동력과 리스크를 전문가 시각으로 완전 분석.">
+<meta name="keywords" content="한국전력,한국전력주가,한국전력전망,KEPCO,015760,원전주,전기요금,원전수출,체코원전,에너지주">
+<link rel="canonical" href="https://sjtiger234.github.io/post-kepco.html">
+<link rel="stylesheet" href="style.css">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9516509200997464" crossorigin="anonymous"></script>
+
+<style>
+/* ── KEPCO 전용 스타일 ── */
+.kepco-hero{
+  background:linear-gradient(135deg,#0a1628 0%,#0d2040 40%,#0f2850 100%);
+  border-radius:14px;padding:36px 40px 32px;margin:32px 0;
+  border:1px solid rgba(59,130,246,.2);position:relative;overflow:hidden;
+}
+.kepco-hero::after{
+  content:'KEPCO';position:absolute;right:-10px;top:50%;transform:translateY(-50%);
+  font-size:8rem;font-weight:900;color:rgba(59,130,246,.05);pointer-events:none;
+  letter-spacing:-.03em;
+}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:28px 0}
+.kpi-box{background:#fff;border:1px solid #E1EDF7;border-radius:10px;padding:18px 16px;
+  box-shadow:0 2px 8px rgba(15,28,53,.05)}
+.kpi-box .lb{font-family:'IBM Plex Mono','Courier New',monospace;font-size:.63rem;
+  letter-spacing:.1em;text-transform:uppercase;color:#6B7A99;margin-bottom:6px}
+.kpi-box .vl{font-family:'Playfair Display',Georgia,serif;font-size:1.5rem;
+  font-weight:700;line-height:1;color:#96720C}
+.kpi-box .sb{font-size:.73rem;color:#8E98B8;margin-top:5px}
+.kpi-box.blue{border-color:rgba(59,130,246,.25)}.kpi-box.blue .vl{color:#1E40AF}
+.kpi-box.green{border-color:rgba(34,197,94,.25)}.kpi-box.green .vl{color:#15803D}
+.kpi-box.red{border-color:rgba(239,68,68,.2)}.kpi-box.red .vl{color:#B91C1C}
+.kpi-box.gold{border-color:rgba(150,114,12,.25)}.kpi-box.gold .vl{color:#96720C}
+
+/* 주가 차트 */
+.chart-section{background:#fff;border:1px solid #E1EDF7;border-radius:12px;
+  padding:28px;margin:28px 0;box-shadow:0 2px 12px rgba(15,28,53,.06)}
+.chart-title{font-family:'Playfair Display',Georgia,serif;font-size:1.05rem;
+  font-weight:700;color:#0F1C35;margin-bottom:20px;
+  display:flex;align-items:center;gap:10px}
+.chart-title::before{content:'';display:inline-block;width:4px;height:1.1rem;
+  background:#96720C;border-radius:2px}
+.price-chart-wrap{width:100%;overflow-x:auto}
+.price-chart-wrap svg{display:block;min-width:560px}
+
+/* 증권사 목표주가 바 */
+.target-list{margin:20px 0}
+.target-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.t-name{font-family:'IBM Plex Mono',monospace;font-size:.74rem;color:#3A4E6B;
+  min-width:90px;text-align:right}
+.t-bar-wrap{flex:1;height:26px;background:#F4F8FD;border-radius:4px;overflow:hidden;
+  border:1px solid #E1EDF7}
+.t-bar{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:10px;
+  font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;color:#fff;
+  width:0;transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+.t-bar.bull{background:linear-gradient(to right,#1d4ed8,#3b82f6)}
+.t-bar.high{background:linear-gradient(to right,#1e40af,#2563eb)}
+.t-bar.mid{background:linear-gradient(to right,#92400e,#b45309)}
+.t-bar.low{background:linear-gradient(to right,#7f1d1d,#b91c1c)}
+.t-val{font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:#96720C;
+  min-width:52px;font-weight:700}
+
+/* 실적 테이블 */
+.fin-table{width:100%;border-collapse:collapse;margin:20px 0;font-size:.87rem}
+.fin-table th{background:#0F1E3A;color:#93C5FD;font-family:'IBM Plex Mono',monospace;
+  font-size:.72rem;letter-spacing:.05em;text-align:left;padding:10px 12px;font-weight:500}
+.fin-table td{padding:10px 12px;border-bottom:1px solid #E1EDF7;color:#3A4E6B;vertical-align:middle}
+.fin-table tr:last-child td{border-bottom:none}
+.fin-table td:first-child{color:#0F1C35;font-weight:600}
+.fin-table .hl{color:#96720C;font-weight:700}
+.fin-table .pos{color:#15803D;font-weight:700}
+.fin-table .neg{color:#B91C1C;font-weight:700}
+.fin-table .best{background:rgba(150,114,12,.04)}
+.fin-table tr:nth-child(even){background:#FAFCFE}
+
+/* 원전 현황 카드 */
+.nuke-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0}
+.nuke-card{background:#fff;border:1px solid #E1EDF7;border-radius:10px;padding:20px 18px;
+  box-shadow:0 2px 8px rgba(15,28,53,.05)}
+.nuke-card .nc-icon{font-size:1.8rem;margin-bottom:10px}
+.nuke-card .nc-title{font-family:'IBM Plex Mono',monospace;font-size:.7rem;
+  letter-spacing:.08em;text-transform:uppercase;color:#6B7A99;margin-bottom:6px}
+.nuke-card .nc-val{font-family:'Playfair Display',Georgia,serif;font-size:1.6rem;
+  font-weight:700;color:#0F1C35;line-height:1.1;margin-bottom:4px}
+.nuke-card .nc-sub{font-size:.78rem;color:#8E98B8}
+.nuke-card.accent{border-color:rgba(150,114,12,.3);background:rgba(150,114,12,.03)}
+.nuke-card.accent .nc-val{color:#92400E}
+
+/* 시나리오 */
+.sc3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0}
+.sc{border-radius:10px;padding:22px 18px;border:1px solid}
+.sc.bull{background:rgba(34,197,94,.04);border-color:rgba(34,197,94,.25)}
+.sc.base{background:rgba(59,130,246,.04);border-color:rgba(59,130,246,.2)}
+.sc.bear{background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.18)}
+.sc .sl{font-family:'IBM Plex Mono',monospace;font-size:.67rem;letter-spacing:.1em;
+  text-transform:uppercase;font-weight:600;margin-bottom:8px}
+.sc.bull .sl{color:#15803D}.sc.base .sl{color:#1d4ed8}.sc.bear .sl{color:#B91C1C}
+.sc .sn{font-family:'Playfair Display',Georgia,serif;font-size:1.8rem;font-weight:900;
+  line-height:1.1;margin-bottom:10px}
+.sc.bull .sn{color:#15803D}.sc.base .sn{color:#1d4ed8}.sc.bear .sn{color:#B91C1C}
+.sc .sd{font-size:.83rem;color:#3A4E6B;line-height:1.7}
+.sc .sp{font-size:.75rem;font-family:'IBM Plex Mono',monospace;margin-top:10px;font-weight:600}
+.sc.bull .sp{color:#15803D}.sc.base .sp{color:#1d4ed8}.sc.bear .sp{color:#B91C1C}
+
+/* 인사이트 박스 */
+.ibox{background:linear-gradient(135deg,rgba(59,130,246,.06),rgba(16,185,129,.03));
+  border:1px solid rgba(59,130,246,.18);border-left:3px solid #3B82F6;
+  border-radius:0 8px 8px 0;padding:16px 20px;margin:22px 0;
+  font-size:.9rem;color:#3A4E6B;line-height:1.85}
+.ibox strong{color:#1d4ed8}
+.wbox{background:rgba(239,68,68,.04);border-left:3px solid #EF4444;padding:16px 20px;
+  margin:18px 0;border-radius:0 6px 6px 0;font-size:.88rem;color:#3A4E6B;line-height:1.8}
+.wbox strong{color:#B91C1C}
+.gbox{background:rgba(34,197,94,.04);border-left:3px solid #22C55E;padding:16px 20px;
+  margin:18px 0;border-radius:0 6px 6px 0;font-size:.88rem;color:#3A4E6B;line-height:1.8}
+.gbox strong{color:#15803D}
+
+/* 손익 히스토리 차트 */
+.bar-chart-wrap{margin:10px 0}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.bar-yr{font-family:'IBM Plex Mono',monospace;font-size:.73rem;color:#6B7A99;min-width:44px}
+.bar-track{flex:1;height:24px;background:#F4F8FD;border-radius:4px;position:relative;
+  overflow:hidden;border:1px solid #E1EDF7}
+.bar-pos{height:100%;background:linear-gradient(to right,#1d4ed8,#60a5fa);border-radius:4px;
+  display:flex;align-items:center;padding-left:8px;
+  font-family:'IBM Plex Mono',monospace;font-size:.71rem;color:#fff;font-weight:600}
+.bar-neg{height:100%;background:linear-gradient(to right,#b91c1c,#ef4444);border-radius:4px;
+  display:flex;align-items:center;padding-left:8px;
+  font-family:'IBM Plex Mono',monospace;font-size:.71rem;color:#fff;font-weight:600}
+.bar-label{font-family:'IBM Plex Mono',monospace;font-size:.73rem;min-width:60px;
+  font-weight:700}
+
+/* 전략 테이블 */
+.strat-table{width:100%;border-collapse:collapse;margin:18px 0;font-size:.87rem}
+.strat-table th{background:#0F1E3A;color:#93C5FD;font-family:'IBM Plex Mono',monospace;
+  font-size:.72rem;padding:10px 12px;text-align:left;font-weight:500;letter-spacing:.04em}
+.strat-table td{padding:10px 12px;border-bottom:1px solid #E1EDF7;color:#3A4E6B}
+.strat-table tr:last-child td{border-bottom:none}
+.strat-table td:first-child{color:#0F1C35;font-weight:700}
+
+/* 모바일 */
+@media(max-width:480px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .nuke-grid{grid-template-columns:1fr}
+  .sc3{grid-template-columns:1fr}
+  .kepco-hero{padding:22px 20px}
+  .kepco-hero::after{display:none}
+  .fin-table thead,.strat-table thead{display:none}
+  .fin-table,.fin-table tbody,.fin-table tr{display:block;width:100%}
+  .fin-table tr{background:#fff;border:1px solid #E1EDF7;border-radius:8px;
+    margin-bottom:10px;padding:12px 14px}
+  .fin-table td{display:block;border-bottom:none;padding:3px 0;font-size:.83rem}
+  .fin-table td:first-child{color:#96720C;font-size:.78rem;font-weight:700;
+    padding-bottom:6px;border-bottom:1px solid rgba(150,114,12,.2);margin-bottom:4px}
+  .target-row{flex-wrap:wrap}
+  .t-name{min-width:70px;font-size:.67rem}
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html"><span class="brand-mark"></span>차곡차곡 재테크</a>
+    <nav><a href="index.html">홈</a><a href="about.html">소개</a>
+    <a href="contact.html">문의</a><a href="privacy.html">개인정보</a></nav>
+  </div>
+</header>
+
+<section class="article-header-section">
+  <div class="article-header-inner">
+    <div class="article-deco-num">019</div>
+    <p class="article-eyebrow">국내주식 · No. 019</p>
+    <h1>한국전력(KEPCO) 주가 전망 2026<br>— 원전 르네상스의 핵심 수혜주</h1>
+    <div class="article-meta">
+      <span>2026.07.07</span>
+      <span>읽는 시간 약 15분</span>
+      <span>종목코드 015760</span>
+    </div>
+  </div>
+</section>
+
+<main>
+<article class="article">
+
+<!-- 도입 -->
+<div class="kepco-hero">
+  <p style="font-family:'IBM Plex Mono',monospace;font-size:.7rem;letter-spacing:.18em;
+    text-transform:uppercase;color:#60A5FA;margin-bottom:14px;
+    display:flex;align-items:center;gap:8px">
+    <span style="display:inline-block;width:20px;height:1px;background:#60A5FA"></span>
+    현황 분석 리포트 — 2026. 07. 07 기준
+  </p>
+  <p style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.3rem,3vw,1.9rem);
+    font-weight:700;color:#F0EBE0;line-height:1.4;margin-bottom:14px">
+    현재가 <span style="color:#C8A95A">38,250원</span>에서 목표가 <span style="color:#60A5FA">54,019원</span>까지<br>
+    <span style="font-style:italic">상승 여력 +41%</span> — 지금 담아야 할까?
+  </p>
+  <p style="font-size:.9rem;color:#8E98B8;line-height:1.8;max-width:620px">
+    52주 최고가 69,500원 대비 절반 수준으로 조정된 한국전력. 중동 전쟁 종전으로 유가가 안정되고, 원전 이용률이 역사적 최고치에 근접하며 다시 주목받고 있습니다. 국내 유일 전력 독점 기업이자 K-원전 수출의 핵심 플레이어를 전문가 시각으로 완전 분석합니다.
+  </p>
+</div>
+
+<!-- KPI 카드 -->
+<div class="kpi-grid">
+  <div class="kpi-box blue">
+    <div class="lb">현재가 (6/29 종가)</div>
+    <div class="vl">38,250원</div>
+    <div class="sb">52주 최저 34,100 / 최고 69,500</div>
+  </div>
+  <div class="kpi-box gold">
+    <div class="lb">컨센서스 목표주가</div>
+    <div class="vl">54,019원</div>
+    <div class="sb">상승여력 +41.23%</div>
+  </div>
+  <div class="kpi-box green">
+    <div class="lb">1Q26 영업이익</div>
+    <div class="vl">3.78조원</div>
+    <div class="sb">전년 대비 +0.8% / 역대 최고 수준</div>
+  </div>
+  <div class="kpi-box red">
+    <div class="lb">애널리스트 의견</div>
+    <div class="vl">매수 14명</div>
+    <div class="sb">매도 2명 / 전반적 매수</div>
+  </div>
+</div>
+
+<!-- 1. 기업 개요 -->
+<h2>1. 한국전력, 어떤 기업인가</h2>
+<p>한국전력공사(KEPCO, 종목코드 015760)는 대한민국 유일의 전력 독점 공기업입니다. 전국 전력망의 발전·송전·배전·판매를 통합 관장하며, 정부가 지분의 51% 이상을 보유하고 있습니다. 6개 발전 자회사(한국수력원자력·중부발전·서부발전·남부발전·동서발전·남동발전)를 거느린 거대 에너지 그룹의 지주 역할을 합니다.</p>
+<p>독점 사업자라는 특성 덕분에 매출 변동성이 낮지만, 동시에 전기요금이 정치적 결정에 의해 결정되는 구조적 취약점도 있습니다. 2022년 러-우 전쟁으로 연료비가 폭등했을 때 <span style="color:#B91C1C;font-weight:600">32.6조원</span>이라는 전례 없는 적자를 기록한 것이 이 구조의 한계를 여실히 보여줬습니다.</p>
+
+<!-- 2. 주가 차트 -->
+<div class="chart-section" id="priceChart">
+  <div class="chart-title">한국전력 주가 흐름 — 최근 2년 (2024~2026)</div>
+  <div class="price-chart-wrap">
+    <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
+      <defs>
+        <linearGradient id="priceFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.02"/>
+        </linearGradient>
+        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#3B82F6"/>
+          <stop offset="60%" stop-color="#96720C"/>
+          <stop offset="100%" stop-color="#EF4444"/>
+        </linearGradient>
+      </defs>
+      <!-- 배경 그리드 -->
+      <line x1="50" y1="20" x2="50" y2="210" stroke="#E1EDF7" stroke-width="1"/>
+      <line x1="50" y1="210" x2="680" y2="210" stroke="#E1EDF7" stroke-width="1"/>
+      <line x1="50" y1="60" x2="680" y2="60" stroke="#E1EDF7" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="50" y1="100" x2="680" y2="100" stroke="#E1EDF7" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="50" y1="140" x2="680" y2="140" stroke="#E1EDF7" stroke-width="1" stroke-dasharray="4,4"/>
+      <line x1="50" y1="180" x2="680" y2="180" stroke="#E1EDF7" stroke-width="1" stroke-dasharray="4,4"/>
+      <!-- Y축 레이블 -->
+      <text x="44" y="63" fill="#8E98B8" font-size="11" font-family="'IBM Plex Mono',monospace" text-anchor="end">70,000</text>
+      <text x="44" y="103" fill="#8E98B8" font-size="11" font-family="'IBM Plex Mono',monospace" text-anchor="end">55,000</text>
+      <text x="44" y="143" fill="#8E98B8" font-size="11" font-family="'IBM Plex Mono',monospace" text-anchor="end">40,000</text>
+      <text x="44" y="183" fill="#8E98B8" font-size="11" font-family="'IBM Plex Mono',monospace" text-anchor="end">25,000</text>
+      <text x="44" y="213" fill="#8E98B8" font-size="11" font-family="'IBM Plex Mono',monospace" text-anchor="end">10,000</text>
+      <!-- X축 레이블 -->
+      <text x="80" y="228" fill="#8E98B8" font-size="10" font-family="'IBM Plex Mono',monospace" text-anchor="middle">24.01</text>
+      <text x="180" y="228" fill="#8E98B8" font-size="10" font-family="'IBM Plex Mono',monospace" text-anchor="middle">24.07</text>
+      <text x="280" y="228" fill="#8E98B8" font-size="10" font-family="'IBM Plex Mono',monospace" text-anchor="middle">25.01</text>
+      <text x="380" y="228" fill="#8E98B8" font-size="10" font-family="'IBM Plex Mono',monospace" text-anchor="middle">25.07</text>
+      <text x="480" y="228" fill="#8E98B8" font-size="10" font-family="'IBM Plex Mono',monospace" text-anchor="middle">26.01</text>
+      <text x="580" y="228" fill="#8E98B8" font-size="10" font-family="'IBM Plex Mono',monospace" text-anchor="middle">26.07</text>
+      <!-- 가격 경로 (채우기) -->
+      <path d="M80,180 L120,172 L160,165 L200,155 L240,148 L260,140
+               L280,128 L300,118 L340,108 L370,100 L400,88 L430,78
+               L440,62 L450,70 L460,85 L480,92 L500,102 L520,108
+               L540,115 L560,118 L580,120 L600,122 L630,135 L660,152 L680,155
+               L680,210 L80,210 Z" fill="url(#priceFill)"/>
+      <!-- 가격 선 -->
+      <polyline points="80,180 120,172 160,165 200,155 240,148 260,140
+               280,128 300,118 340,108 370,100 400,88 430,78
+               440,62 450,70 460,85 480,92 500,102 520,108
+               540,115 560,118 580,120 600,122 630,135 660,152 680,155"
+        fill="none" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linejoin="round"/>
+      <!-- 주요 이벤트 마커 -->
+      <circle cx="440" cy="62" r="5" fill="#EF4444"/>
+      <text x="440" y="54" fill="#EF4444" font-size="9.5" font-family="'IBM Plex Mono',monospace" text-anchor="middle">69,500</text>
+      <text x="440" y="44" fill="#8E98B8" font-size="9" font-family="'Noto Sans KR','Malgun Gothic',sans-serif" text-anchor="middle">52주 최고</text>
+      <circle cx="80" cy="180" r="4" fill="#3B82F6"/>
+      <text x="80" y="196" fill="#8E98B8" font-size="9" font-family="'Noto Sans KR','Malgun Gothic',sans-serif" text-anchor="middle">24년초</text>
+      <circle cx="680" cy="155" r="5" fill="#96720C"/>
+      <text x="680" y="148" fill="#96720C" font-size="9.5" font-family="'IBM Plex Mono',monospace" text-anchor="end">~38,250</text>
+      <text x="680" y="138" fill="#8E98B8" font-size="9" font-family="'Noto Sans KR','Malgun Gothic',sans-serif" text-anchor="end">현재가</text>
+      <!-- 목표주가 선 -->
+      <line x1="50" y1="116" x2="680" y2="116" stroke="#15803D" stroke-width="1.2" stroke-dasharray="6,3"/>
+      <text x="54" y="112" fill="#15803D" font-size="9.5" font-family="'IBM Plex Mono',monospace">목표가 54,019</text>
+    </svg>
+  </div>
+  <p style="font-size:.78rem;color:#8E98B8;margin-top:8px">
+    ※ 위 차트는 2024년~2026년 7월 주요 흐름을 시각화한 개략도입니다. 실제 주가와 차이가 있을 수 있습니다.
+  </p>
+</div>
+
+<!-- 3. 주요 증권사 목표주가 -->
+<h2>2. 증권사별 목표주가 비교</h2>
+<p>총 16명의 애널리스트 중 14명이 매수(Buy) 의견을 유지하고 있습니다. <cite index="71-1">컨센서스 평균 목표주가는 54,019원으로 현재가 대비 +41%의 상승 여력을 제시하고 있습니다.</cite> 다만 중동 전쟁 여파로 일부 증권사는 목표주가를 하향 조정했어요.</p>
+
+<div class="target-list" id="targetList">
+  <div class="target-row">
+    <span class="t-name">목표가 최고</span>
+    <div class="t-bar-wrap"><div class="t-bar bull" data-w="100%">92,000원</div></div>
+    <span class="t-val" style="color:#15803D">92,000</span>
+  </div>
+  <div class="target-row">
+    <span class="t-name">키움증권</span>
+    <div class="t-bar-wrap"><div class="t-bar bull" data-w="87%">80,000원</div></div>
+    <span class="t-val">80,000</span>
+  </div>
+  <div class="target-row">
+    <span class="t-name">LS증권</span>
+    <div class="t-bar-wrap"><div class="t-bar bull" data-w="74%">62,000원</div></div>
+    <span class="t-val">62,000</span>
+  </div>
+  <div class="target-row">
+    <span class="t-name">KB증권</span>
+    <div class="t-bar-wrap"><div class="t-bar high" data-w="72%">63,000원</div></div>
+    <span class="t-val">63,000</span>
+  </div>
+  <div class="target-row">
+    <span class="t-name">★ 컨센서스</span>
+    <div class="t-bar-wrap"><div class="t-bar mid" data-w="64%" style="background:linear-gradient(to right,#92400e,#d97706)">54,019원</div></div>
+    <span class="t-val" style="color:#96720C;font-weight:900">54,019 ★</span>
+  </div>
+  <div class="target-row">
+    <span class="t-name">iM증권</span>
+    <div class="t-bar-wrap"><div class="t-bar mid" data-w="55%">50,000원</div></div>
+    <span class="t-val">50,000</span>
+  </div>
+  <div class="target-row">
+    <span class="t-name">목표가 최저</span>
+    <div class="t-bar-wrap"><div class="t-bar low" data-w="38%">28,000원</div></div>
+    <span class="t-val" style="color:#B91C1C">28,000</span>
+  </div>
+</div>
+
+<div class="ibox">
+  <strong>전문가 시각 (LS증권 성종화 연구원):</strong> "중동전쟁 종전으로 두바이유가 배럴당 60~70달러로 안정화되고 있다. 전쟁 전까지 전기요금도 50% 이상 인상된 상태였고 해외 원전 수주가 밸류에이션 할인율 해소 요인으로 작용했다. 전쟁 전까지 모든 것이 좋았다는 점을 주목해야 한다."
+</div>
+
+<!-- 4. 실적 분석 -->
+<h2>3. 실적 분석 — 2022년 지옥에서 2026년 천당으로</h2>
+<p>한국전력의 최근 5년 실적은 그야말로 롤러코스터입니다. 2022년 러-우 전쟁발 에너지 쇼크로 32.6조원 영업손실이라는 전무후무한 적자를 기록했다가, 전기요금 인상과 국제유가 안정화로 2024~2025년 빠르게 흑자 전환에 성공했습니다.</p>
+
+<!-- 영업이익 바 차트 -->
+<div class="chart-section">
+  <div class="chart-title">연도별 영업이익 추이 (조원)</div>
+  <div class="bar-chart-wrap">
+    <div class="bar-row">
+      <span class="bar-yr">2021</span>
+      <div class="bar-track">
+        <div class="bar-neg" style="width:28%">-5.8조</div>
+      </div>
+      <span class="bar-label" style="color:#B91C1C">-5.8조</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-yr">2022</span>
+      <div class="bar-track">
+        <div class="bar-neg" style="width:100%">-32.6조 (역대 최대 적자)</div>
+      </div>
+      <span class="bar-label" style="color:#B91C1C">-32.6조</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-yr">2023</span>
+      <div class="bar-track">
+        <div class="bar-pos" style="width:18%">+3.5조</div>
+      </div>
+      <span class="bar-label" style="color:#15803D">+3.5조</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-yr">2024</span>
+      <div class="bar-track">
+        <div class="bar-pos" style="width:62%">+12.0조</div>
+      </div>
+      <span class="bar-label" style="color:#15803D">+12.0조</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-yr">2025</span>
+      <div class="bar-track">
+        <div class="bar-pos" style="width:78%">+14.8조</div>
+      </div>
+      <span class="bar-label" style="color:#15803D">+14.8조</span>
+    </div>
+    <div class="bar-row">
+      <span class="bar-yr" style="color:#96720C">2026E</span>
+      <div class="bar-track">
+        <div class="bar-pos" style="width:88%;background:linear-gradient(to right,#92400e,#d97706)">+16조 내외 (전망)</div>
+      </div>
+      <span class="bar-label" style="color:#96720C">~16조E</span>
+    </div>
+  </div>
+</div>
+
+<!-- 분기 실적 테이블 -->
+<div class="chart-section">
+  <div class="chart-title">분기별 실적 추이</div>
+  <table class="fin-table">
+    <thead>
+      <tr>
+        <th>분기</th><th>매출액</th><th>영업이익</th><th>영업이익률</th><th>전분기比</th><th>전년比</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>2024 4Q</td><td>24.4조원</td><td>2.7조원</td><td>11.1%</td><td>-</td><td>+흑자전환</td></tr>
+      <tr><td>2025 1Q</td><td>25.0조원</td><td class="pos">3.8조원</td><td>15.2%</td><td>+41%</td><td class="pos">+39%</td></tr>
+      <tr><td>2025 2Q</td><td>22.8조원</td><td>2.1조원</td><td>9.2%</td><td>-45%</td><td>+흑자전환</td></tr>
+      <tr><td>2025 3Q</td><td>26.3조원</td><td>4.5조원</td><td>17.1%</td><td>+114%</td><td class="pos">+성수기</td></tr>
+      <tr><td>2025 4Q</td><td>23.7조원</td><td>2.0조원</td><td>8.4%</td><td>-56%</td><td class="hl">컨센 하회</td></tr>
+      <tr class="best"><td style="color:#96720C">2026 1Q ★</td><td>24.4조원</td><td class="pos">3.78조원</td><td>15.5%</td><td>+89%</td><td class="pos">+0.8%</td></tr>
+      <tr><td>2026 2Q (전망)</td><td>22~23조원</td><td class="neg">1.5~2.5조원</td><td>6~11%</td><td>-30~40%</td><td class="neg">유가 반영 시작</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:.78rem;color:#8E98B8;margin-top:8px">※ E는 추정치. 출처: 한국전력 IR, 각 증권사 리포트 기준</p>
+</div>
+
+<div class="ibox">
+  <strong>핵심 분석:</strong> 2026년 1분기(3.78조원)는 1Q 기준 역대 최고 수준입니다. 그러나 <cite index="78-1">2월 말 중동 전쟁에 따른 국제유가 및 LNG 가격 급등의 영향이 1분기 실적에는 아직 반영되지 않은 결과</cite>라는 점이 핵심 변수예요. 한전의 연료비 구조는 국제유가 변동이 약 <strong>2개 분기 시차</strong>를 두고 반영됩니다. 즉, 2분기부터 유가 상승의 충격이 본격적으로 손익에 반영될 수 있어요.
+</div>
+
+<!-- 5. 원전 현황 -->
+<h2>4. 원전 현황 — 한국전력의 숨겨진 자산</h2>
+<p>한국전력의 핵심 경쟁력은 저비용·저탄소 원자력 발전입니다. 원전은 가동만 하면 다른 전원(화력·가스)보다 훨씬 저렴한 비용으로 전력을 생산할 수 있어요. 원전 이용률이 올라갈수록 한전의 수익성은 구조적으로 개선됩니다.</p>
+
+<div class="nuke-grid">
+  <div class="nuke-card accent">
+    <div class="nc-icon">⚛️</div>
+    <div class="nc-title">2026년 원전 이용률 목표</div>
+    <div class="nc-val">89%</div>
+    <div class="nc-sub">전년 대비 +4.4%p 상승</div>
+  </div>
+  <div class="nuke-card">
+    <div class="nc-icon">🔧</div>
+    <div class="nc-title">1Q26 실제 이용률</div>
+    <div class="nc-val">87%</div>
+    <div class="nc-sub">역사적 최고 수준 근접</div>
+  </div>
+  <div class="nuke-card">
+    <div class="nc-icon">🏗️</div>
+    <div class="nc-title">신한울 3·4호기 진척률</div>
+    <div class="nc-val">75%</div>
+    <div class="nc-sub">2028년 가동 목표</div>
+  </div>
+  <div class="nuke-card">
+    <div class="nc-icon">🌍</div>
+    <div class="nc-title">체코 원전 계약 규모</div>
+    <div class="nc-val">26조원</div>
+    <div class="nc-sub">한수원 주도 Team Korea</div>
+  </div>
+  <div class="nuke-card">
+    <div class="nc-icon">🔄</div>
+    <div class="nc-title">노후원전 계속운전</div>
+    <div class="nc-val">4기</div>
+    <div class="nc-sub">고리 2·3·한빛 1·2호기</div>
+  </div>
+  <div class="nuke-card">
+    <div class="nc-icon">📋</div>
+    <div class="nc-title">해외 원전 파이프라인</div>
+    <div class="nc-val">5건+</div>
+    <div class="nc-sub">사우디·UAE·튀르키예·베트남 등</div>
+  </div>
+</div>
+
+<div class="gbox">
+  <strong>원전 수출 파이프라인 — 중장기 최대 카탈리스트:</strong>
+  체코 두코바니 5·6호기(2025년 본계약, 26조원) 성공 이후, 체코 테믈린 1·2호기, UAE BNPP 5·6호기, 사우디아라비아 두웨이힌 1·2호기 등 대형 원전 프로젝트들이 파이프라인에 대기 중입니다. 미국은 2050년까지 원전을 현재 100GW에서 400GW로 4배 확대 계획을 발표한 만큼, Team Korea의 진출 잠재력도 주목됩니다.
+</div>
+
+<!-- 6. 상승/리스크 요인 -->
+<h2>5. 상승 동력 vs 리스크 — 균형 잡힌 시각</h2>
+
+<div class="chart-section">
+  <div class="chart-title">투자 결정 매트릭스 — 한국전력</div>
+  <table class="fin-table">
+    <thead>
+      <tr><th>구분</th><th>항목</th><th>현황 및 내용</th><th>영향도</th></tr>
+    </thead>
+    <tbody>
+      <tr class="best">
+        <td rowspan="4" style="color:#15803D;font-size:.85rem">📈 상승<br>동력</td>
+        <td>원전 이용률 상승</td>
+        <td>87%→89% 목표. 신한울 3·4호기 2028년 추가</td>
+        <td class="pos">★★★★★</td>
+      </tr>
+      <tr>
+        <td>해외 원전 수주</td>
+        <td>체코 26조 계약. UAE·사우디·튀르키예 파이프라인</td>
+        <td class="pos">★★★★★</td>
+      </tr>
+      <tr>
+        <td>유가 안정화</td>
+        <td>중동 종전 → 두바이유 60~70달러 안정화 기대</td>
+        <td class="pos">★★★★☆</td>
+      </tr>
+      <tr>
+        <td>전기요금 인상</td>
+        <td>지방선거 이후 LMP 시행 및 지역별 차등요금제 검토</td>
+        <td class="pos">★★★☆☆</td>
+      </tr>
+      <tr class="best">
+        <td rowspan="4" style="color:#B91C1C;font-size:.85rem">⚠️ 리스크<br>요인</td>
+        <td>연료비 시차 반영</td>
+        <td>유가 상승분이 2분기부터 손익 반영. 2022년 패턴 재현 우려</td>
+        <td class="neg">★★★★★</td>
+      </tr>
+      <tr>
+        <td>전기요금 동결</td>
+        <td>정부 물가안정 기조로 하반기 인상 여력 제한</td>
+        <td class="neg">★★★★☆</td>
+      </tr>
+      <tr>
+        <td>원전 충당부채</td>
+        <td>온실가스·원전사후처리 비용 충당부채 증가</td>
+        <td class="neg">★★★☆☆</td>
+      </tr>
+      <tr>
+        <td>고환율 리스크</td>
+        <td>원화 약세 지속 시 LNG 수입 비용 추가 상승</td>
+        <td class="neg">★★★☆☆</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="wbox">
+  <strong>핵심 리스크 — 2022년의 악몽이 재현될 수 있나:</strong> <cite index="78-1">iM증권 전유진 연구원은 "2022년 러-우 전쟁 당시 한국전력이 4분기 10.8조원의 영업적자를 기록했던 사례를 떠올리면 이번 충격의 강도가 당시보다 약하다고 단정하기 어렵다"고 분석했습니다.</cite> 연료비 구조는 유가 변동이 약 2개 분기 시차를 두고 반영되는 만큼, 중동 전쟁 시기 급등했던 유가가 2~3분기 실적에 얼마나 반영되느냐가 관건입니다.
+</div>
+
+<!-- 7. 3가지 시나리오 -->
+<h2>6. 2026년 하반기 3가지 시나리오</h2>
+<div class="sc3">
+  <div class="sc bull">
+    <div class="sl">🚀 강세 시나리오</div>
+    <div class="sn">55,000~62,000원</div>
+    <div class="sd">
+      중동 종전 확정 → 유가 60달러 안정화<br>
+      하반기 전기요금 인상 단행<br>
+      추가 원전 수주 발표<br>
+      원전 이용률 90%+ 달성
+    </div>
+    <div class="sp">확률 추정: 25%</div>
+  </div>
+  <div class="sc base">
+    <div class="sl">📊 기본 시나리오</div>
+    <div class="sn">40,000~50,000원</div>
+    <div class="sd">
+      유가 안정화 불완전<br>
+      2~3분기 연료비 부담 실적 반영<br>
+      전기요금 동결 지속<br>
+      원전 수출 협상 진행 중
+    </div>
+    <div class="sp">확률 추정: 55% ← 가장 유력</div>
+  </div>
+  <div class="sc bear">
+    <div class="sl">⚠️ 약세 시나리오</div>
+    <div class="sn">28,000~38,000원</div>
+    <div class="sd">
+      중동 리스크 재점화 → 유가 재급등<br>
+      2~3분기 영업손실 전환<br>
+      전기요금 동결 장기화<br>
+      원전 수주 차질
+    </div>
+    <div class="sp">확률 추정: 20%</div>
+  </div>
+</div>
+
+<!-- 8. 투자 전략 -->
+<h2>7. 투자자별 접근 전략</h2>
+<table class="strat-table">
+  <thead>
+    <tr><th>투자자 유형</th><th>추천 전략</th><th>핵심 포인트</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>장기 가치투자 (3년+)</td>
+      <td>현재가~38,000원대에서 분할 매수 시작</td>
+      <td>국내 유일 전력 독점 + 원전 수출 성장성. 밸류에이션 매력 충분</td>
+    </tr>
+    <tr>
+      <td>중기 투자 (1~2년)</td>
+      <td>2~3분기 실적 확인 후 비중 확대</td>
+      <td>유가 충격 반영 후 실적 저점 확인 시점이 최적 매수 구간</td>
+    </tr>
+    <tr>
+      <td>단기 트레이딩</td>
+      <td>원전 수주 뉴스 / 유가 급락 시 단기 매수</td>
+      <td>카탈리스트 이벤트 기반 접근. 변동성 리스크 관리 필수</td>
+    </tr>
+    <tr>
+      <td>연금저축·ISA</td>
+      <td>포트폴리오의 5~10% 비중 편입</td>
+      <td>공기업 안정성 + 성장성 조합. 장기 배당 성장 기대</td>
+    </tr>
+    <tr>
+      <td>리스크 회피형</td>
+      <td>3분기 실적 발표(8월) 이후 진입 검토</td>
+      <td>유가 상승분 완전 반영 후 실적 방향성 확인하고 투자 결정</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 9. 핵심 모니터링 지표 -->
+<h2>8. 반드시 체크해야 할 4가지 지표</h2>
+<div class="nuke-grid" style="grid-template-columns:repeat(2,1fr)">
+  <div class="nuke-card">
+    <div class="nc-icon">🛢️</div>
+    <div class="nc-title">두바이유 가격</div>
+    <div class="nc-val" style="font-size:1.2rem">60~70달러 유지?</div>
+    <div class="nc-sub">배럴당 가격이 한전 연료비 원가를 직접 결정. 이 구간을 벗어나면 실적 전망치 대폭 수정</div>
+  </div>
+  <div class="nuke-card">
+    <div class="nc-icon">⚡</div>
+    <div class="nc-title">전기요금 인상 여부</div>
+    <div class="nc-val" style="font-size:1.2rem">지방선거 후 가을?</div>
+    <div class="nc-sub">정부의 물가 기조 변화와 선거 일정이 요금 인상 타이밍 결정. LMP 도입 시 수익성 구조 개선</div>
+  </div>
+  <div class="nuke-card">
+    <div class="nc-icon">🌍</div>
+    <div class="nc-title">해외 원전 수주 진전</div>
+    <div class="nc-val" style="font-size:1.2rem">사우디·튀르키예</div>
+    <div class="nc-sub">두코바니 이후 추가 수주 발표 시 밸류에이션 재평가 트리거. 2026~2027년 협상 분수령</div>
+  </div>
+  <div class="nuke-card">
+    <div class="nc-icon">⚛️</div>
+    <div class="nc-title">원전 이용률</div>
+    <div class="nc-val" style="font-size:1.2rem">89% 달성 여부</div>
+    <div class="nc-sub">1%p 상승 = 수백억원 비용 절감 효과. 예방정비 일정 및 안전 이슈 모니터링 필수</div>
+  </div>
+</div>
+
+<!-- 결론 -->
+<h2>결론 — 전문가 최종 시각</h2>
+<p>한국전력은 국내 유일의 전력 독점 기업이자 K-원전 수출의 핵심 플레이어라는 이중의 성장 동력을 보유하고 있습니다. 52주 최고가(69,500원) 대비 45% 이상 조정된 현재 주가(38,250원)는 구조적 가치 대비 저평가 영역에 있다는 게 14명 애널리스트의 공통된 시각입니다.</p>
+<p>다만 단기 리스크도 현실입니다. 중동 전쟁 시기 급등했던 국제유가와 LNG 가격이 2~3분기 실적에 본격 반영되면서 영업이익이 일시적으로 감소할 수 있습니다. 2022년처럼 대규모 적자로 이어질 가능성은 낮지만, 현재 유가 수준(배럴당 60~70달러)이 유지된다는 전제가 흔들리면 전망치는 크게 바뀔 수 있습니다.</p>
+<p>결론적으로, <strong>단기 실적 불확실성을 감내할 수 있는 중장기 투자자</strong>에게 현 주가 수준은 매력적인 구간입니다. 한 번에 대량 매수보다는 2~3분기에 걸쳐 분할 매수하면서 실적 하단을 확인하는 전략이 가장 현실적입니다.</p>
+
+<div class="gbox" style="margin-top:24px">
+  <strong>핵심 투자 원칙:</strong> 한국전력의 장기 성장 방향성(원전 확대 + K-원전 수출)은 흔들리지 않습니다. 문제는 항상 타이밍입니다. "싸졌을 때 조금씩 담고, 실적 회복을 확인하며 비중을 늘리는 것" — 이 단순한 전략이 한국전력에는 가장 잘 맞습니다.
+</div>
+
+<p class="disclaimer">이 글은 공개된 자료와 증권사 리포트를 바탕으로 한 정보 제공 목적의 글이며, 특정 종목에 대한 매수·매도 추천이 아닙니다. 주식 투자는 원금 손실 가능성이 있으며, 과거 수익률이 미래를 보장하지 않습니다. 투자 결정과 그 결과는 전적으로 본인의 판단과 책임에 따릅니다. (기준일: 2026년 7월 7일 | 종목코드: 015760 코스피)</p>
+
+</article>
+
+<nav class="article-nav">
+  <a href="post-samsung.html">← 삼성전자 주가 전망</a>
+  <a href="post-hynix.html">SK하이닉스 주가 전망 →</a>
+</nav>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p>© 2026 차곡차곡 재테크. 이 블로그의 콘텐츠는 정보 제공을 목적으로 하며, 투자 권유가 아닙니다.</p>
+    <nav class="footer-nav">
+      <a href="about.html">소개</a><a href="contact.html">문의</a><a href="privacy.html">개인정보</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+// 바 차트 애니메이션
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      document.querySelectorAll('.t-bar').forEach(bar => {
+        const w = bar.dataset.w;
+        setTimeout(() => { bar.style.width = w; }, 200);
+      });
+      observer.disconnect();
+    }
+  });
+}, {threshold: 0.3});
+const tl = document.getElementById('targetList');
+if(tl) observer.observe(tl);
+</script>
+
+</body>
+</html>

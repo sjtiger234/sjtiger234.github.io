@@ -141,6 +141,26 @@
 .strat-table tr:last-child td{border-bottom:none}
 .strat-table td:first-child{color:#0F1C35;font-weight:700}
 
+
+/* 전략 카드 (테이블 대체) */
+.strat-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:18px 0}
+.strat-card{background:#fff;border:1px solid #E1EDF7;border-radius:10px;
+  overflow:hidden;box-shadow:0 2px 8px rgba(15,28,53,.05)}
+.strat-header{display:flex;align-items:center;gap:10px;padding:14px 16px;
+  background:#0F1E3A;border-bottom:1px solid rgba(255,255,255,.08)}
+.strat-icon{font-size:1.2rem}
+.strat-type{font-family:'Playfair Display',Georgia,serif;font-size:.95rem;
+  font-weight:700;color:#F0EBE0;word-break:keep-all}
+.strat-body{padding:14px 16px}
+.strat-label{font-family:'IBM Plex Mono','Courier New',monospace;font-size:.63rem;
+  letter-spacing:.1em;text-transform:uppercase;color:#96720C;
+  margin:10px 0 4px;font-weight:600}
+.strat-label:first-child{margin-top:0}
+.strat-text{font-size:.87rem;color:#3A4E6B;line-height:1.65;word-break:keep-all}
+@media(max-width:600px){
+  .strat-cards{grid-template-columns:1fr}
+}
+
 /* 모바일 */
 @media(max-width:480px){
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
@@ -154,7 +174,7 @@
     margin-bottom:10px;padding:12px 14px}
   .fin-table td{display:block;border-bottom:none;padding:3px 0;font-size:.83rem}
   .fin-table td:first-child{color:#96720C;font-size:.78rem;font-weight:700;
-    padding-bottom:6px;border-bottom:1px solid rgba(150,114,12,.2);margin-bottom:4px}
+    padding-bottom:6px;border-bottom:1px solid rgba(150,114,12,.2);margin-bottom:4px;word-break:keep-all}
   .target-row{flex-wrap:wrap}
   .t-name{min-width:70px;font-size:.67rem}
 }
@@ -477,15 +497,21 @@
 
 <div class="chart-section">
   <div class="chart-title">투자 결정 매트릭스 — 한국전력</div>
-  <table class="fin-table">
+
+  <p style="font-family:'IBM Plex Mono','Courier New',monospace;font-size:.72rem;
+    letter-spacing:.12em;text-transform:uppercase;color:#15803D;
+    margin:0 0 10px;display:flex;align-items:center;gap:8px">
+    <span style="display:inline-block;width:12px;height:12px;background:#15803D;border-radius:2px"></span>
+    상승 동력 (Upside Catalyst)
+  </p>
+  <table class="fin-table" style="margin-bottom:24px">
     <thead>
-      <tr><th>구분</th><th>항목</th><th>현황 및 내용</th><th>영향도</th></tr>
+      <tr><th style="width:30%">항목</th><th>현황 및 내용</th><th style="width:18%">영향도</th></tr>
     </thead>
     <tbody>
       <tr class="best">
-        <td rowspan="4" style="color:#15803D;font-size:.85rem">📈 상승<br>동력</td>
         <td>원전 이용률 상승</td>
-        <td>87%→89% 목표. 신한울 3·4호기 2028년 추가</td>
+        <td>87%→89% 목표. 신한울 3·4호기 2028년 추가 가동</td>
         <td class="pos">★★★★★</td>
       </tr>
       <tr>
@@ -493,18 +519,31 @@
         <td>체코 26조 계약. UAE·사우디·튀르키예 파이프라인</td>
         <td class="pos">★★★★★</td>
       </tr>
-      <tr>
+      <tr class="best">
         <td>유가 안정화</td>
         <td>중동 종전 → 두바이유 60~70달러 안정화 기대</td>
         <td class="pos">★★★★☆</td>
       </tr>
       <tr>
         <td>전기요금 인상</td>
-        <td>지방선거 이후 LMP 시행 및 지역별 차등요금제 검토</td>
+        <td>지방선거 이후 LMP 시행, 지역별 차등요금제 검토</td>
         <td class="pos">★★★☆☆</td>
       </tr>
+    </tbody>
+  </table>
+
+  <p style="font-family:'IBM Plex Mono','Courier New',monospace;font-size:.72rem;
+    letter-spacing:.12em;text-transform:uppercase;color:#B91C1C;
+    margin:0 0 10px;display:flex;align-items:center;gap:8px">
+    <span style="display:inline-block;width:12px;height:12px;background:#B91C1C;border-radius:2px"></span>
+    리스크 요인 (Downside Risk)
+  </p>
+  <table class="fin-table">
+    <thead>
+      <tr><th style="width:30%">항목</th><th>현황 및 내용</th><th style="width:18%">영향도</th></tr>
+    </thead>
+    <tbody>
       <tr class="best">
-        <td rowspan="4" style="color:#B91C1C;font-size:.85rem">⚠️ 리스크<br>요인</td>
         <td>연료비 시차 반영</td>
         <td>유가 상승분이 2분기부터 손익 반영. 2022년 패턴 재현 우려</td>
         <td class="neg">★★★★★</td>
@@ -514,9 +553,9 @@
         <td>정부 물가안정 기조로 하반기 인상 여력 제한</td>
         <td class="neg">★★★★☆</td>
       </tr>
-      <tr>
+      <tr class="best">
         <td>원전 충당부채</td>
-        <td>온실가스·원전사후처리 비용 충당부채 증가</td>
+        <td>온실가스·원전 사후처리 비용 충당부채 증가</td>
         <td class="neg">★★★☆☆</td>
       </tr>
       <tr>
@@ -572,38 +611,68 @@
 
 <!-- 8. 투자 전략 -->
 <h2>7. 투자자별 접근 전략</h2>
-<table class="strat-table">
-  <thead>
-    <tr><th>투자자 유형</th><th>추천 전략</th><th>핵심 포인트</th></tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>장기 가치투자 (3년+)</td>
-      <td>현재가~38,000원대에서 분할 매수 시작</td>
-      <td>국내 유일 전력 독점 + 원전 수출 성장성. 밸류에이션 매력 충분</td>
-    </tr>
-    <tr>
-      <td>중기 투자 (1~2년)</td>
-      <td>2~3분기 실적 확인 후 비중 확대</td>
-      <td>유가 충격 반영 후 실적 저점 확인 시점이 최적 매수 구간</td>
-    </tr>
-    <tr>
-      <td>단기 트레이딩</td>
-      <td>원전 수주 뉴스 / 유가 급락 시 단기 매수</td>
-      <td>카탈리스트 이벤트 기반 접근. 변동성 리스크 관리 필수</td>
-    </tr>
-    <tr>
-      <td>연금저축·ISA</td>
-      <td>포트폴리오의 5~10% 비중 편입</td>
-      <td>공기업 안정성 + 성장성 조합. 장기 배당 성장 기대</td>
-    </tr>
-    <tr>
-      <td>리스크 회피형</td>
-      <td>3분기 실적 발표(8월) 이후 진입 검토</td>
-      <td>유가 상승분 완전 반영 후 실적 방향성 확인하고 투자 결정</td>
-    </tr>
-  </tbody>
-</table>
+<div class="strat-cards">
+  <div class="strat-card">
+    <div class="strat-header">
+      <span class="strat-icon">📈</span>
+      <span class="strat-type">장기 가치투자 (3년+)</span>
+    </div>
+    <div class="strat-body">
+      <div class="strat-label">추천 전략</div>
+      <div class="strat-text">현재가~38,000원대에서 분할 매수 시작</div>
+      <div class="strat-label">핵심 포인트</div>
+      <div class="strat-text">국내 유일 전력 독점 + 원전 수출 성장성. 밸류에이션 매력 충분</div>
+    </div>
+  </div>
+  <div class="strat-card">
+    <div class="strat-header">
+      <span class="strat-icon">📊</span>
+      <span class="strat-type">중기 투자 (1~2년)</span>
+    </div>
+    <div class="strat-body">
+      <div class="strat-label">추천 전략</div>
+      <div class="strat-text">2~3분기 실적 확인 후 비중 확대</div>
+      <div class="strat-label">핵심 포인트</div>
+      <div class="strat-text">유가 충격 반영 후 실적 저점 확인 시점이 최적 매수 구간</div>
+    </div>
+  </div>
+  <div class="strat-card">
+    <div class="strat-header">
+      <span class="strat-icon">⚡</span>
+      <span class="strat-type">단기 트레이딩</span>
+    </div>
+    <div class="strat-body">
+      <div class="strat-label">추천 전략</div>
+      <div class="strat-text">원전 수주 뉴스 / 유가 급락 시 단기 매수</div>
+      <div class="strat-label">핵심 포인트</div>
+      <div class="strat-text">카탈리스트 이벤트 기반 접근. 변동성 리스크 관리 필수</div>
+    </div>
+  </div>
+  <div class="strat-card">
+    <div class="strat-header">
+      <span class="strat-icon">💰</span>
+      <span class="strat-type">연금저축 · ISA</span>
+    </div>
+    <div class="strat-body">
+      <div class="strat-label">추천 전략</div>
+      <div class="strat-text">포트폴리오의 5~10% 비중 편입</div>
+      <div class="strat-label">핵심 포인트</div>
+      <div class="strat-text">공기업 안정성 + 성장성 조합. 장기 배당 성장 기대</div>
+    </div>
+  </div>
+  <div class="strat-card">
+    <div class="strat-header">
+      <span class="strat-icon">🛡️</span>
+      <span class="strat-type">리스크 회피형</span>
+    </div>
+    <div class="strat-body">
+      <div class="strat-label">추천 전략</div>
+      <div class="strat-text">3분기 실적 발표(8월) 이후 진입 검토</div>
+      <div class="strat-label">핵심 포인트</div>
+      <div class="strat-text">유가 상승분 완전 반영 후 실적 방향성 확인하고 투자 결정</div>
+    </div>
+  </div>
+</div>
 
 <!-- 9. 핵심 모니터링 지표 -->
 <h2>8. 반드시 체크해야 할 4가지 지표</h2>

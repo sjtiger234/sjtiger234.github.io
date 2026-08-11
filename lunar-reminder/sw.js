@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lunar-reminder-v1';
+const CACHE_NAME = 'lunar-reminder-v2';
 const APP_SHELL = [
   './',
   './index.html',
@@ -23,13 +23,21 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// 같은 출처(우리 앱 파일)만 네트워크 우선으로 처리 — 최신 배포 내용이 항상 먼저 시도되고,
+// 오프라인일 때만 캐시로 대체된다. GitHub API 등 다른 출처 요청은 그대로 통과시킨다.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).catch(() => cached);
-    })
+    fetch(event.request)
+      .then((res) => {
+        const resClone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, resClone));
+        return res;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 

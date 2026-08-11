@@ -94,5 +94,13 @@
     "lunarDay": 27,
     "isLeap": false,
     "createdAt": "2026-08-11T04:54:33.139Z"
+  },
+  {
+    "id": "c1cbf024-2313-45a5-add9-398c3eeb1e97",
+    "name": "강형부 생일",
+    "lunarMonth": 1,
+    "lunarDay": 26,
+    "isLeap": false,
+    "createdAt": "2026-08-11T05:42:43.692Z"
   }
 ]

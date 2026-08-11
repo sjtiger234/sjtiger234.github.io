@@ -1,0 +1,49 @@
+name: 음력 기념일 알림 발송
+
+on:
+  schedule:
+    # 매일 23:00 UTC = 08:00 KST (한국은 서머타임 없음)
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: '테스트 알림을 즉시 1건 보내기 (날짜 무관)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 알림 발송
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: mailto:sjtiger234@gmail.com
+          TEST_MODE: ${{ github.event.inputs.test_mode }}
+        run: npm run send-reminders
+
+      - name: 만료된 구독 정리 커밋
+        run: |
+          if ! git diff --quiet -- data/subscriptions.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/subscriptions.json
+            git commit -m "chore: 만료된 푸시 구독 정리"
+            git push
+          fi

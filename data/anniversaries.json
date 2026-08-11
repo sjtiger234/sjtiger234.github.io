@@ -14,5 +14,13 @@
     "lunarDay": 14,
     "isLeap": false,
     "createdAt": "2026-08-11T03:34:04.074Z"
+  },
+  {
+    "id": "03ef2e76-4be1-4898-905a-10cf6008bfcd",
+    "name": "세나 생일",
+    "lunarMonth": 4,
+    "lunarDay": 15,
+    "isLeap": false,
+    "createdAt": "2026-08-11T03:41:17.094Z"
   }
 ]

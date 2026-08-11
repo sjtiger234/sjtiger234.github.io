@@ -9,7 +9,7 @@ const SUB_PATH = 'data/subscriptions.json';
 
 // GitHub Actions 시크릿의 VAPID_PRIVATE_KEY와 짝이 되는 공개키.
 // `npx web-push generate-vapid-keys` 로 발급받은 뒤 이 자리에 붙여넣으세요. (공개키는 비밀값이 아닙니다)
-const VAPID_PUBLIC_KEY = 'REPLACE_WITH_VAPID_PUBLIC_KEY';
+const VAPID_PUBLIC_KEY = 'BJSSz6qkzRUkZd2O3acGfjDybpSFl0lLxHCSseaCDPZSKMvoT0mQT2nEsHPMkdkO9Gk6q4Yio2Bn85lv64OGaks';
 
 const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
 const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;

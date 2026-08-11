@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>음력 기념일 알리미</title>
+<meta name="description" content="음력 기념일을 등록하면 하루 전과 당일 아침에 휴대폰 알림으로 알려드립니다.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1C2F52">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="음력 알리미">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="moon">🌙</div>
+    <div>
+      <h1>음력 기념일 알리미</h1>
+      <p>하루 전, 그리고 당일 아침에 알려드려요</p>
+    </div>
+  </header>
+
+  <!-- 알림 설정 카드 -->
+  <section class="card">
+    <h2>알림 <span class="badge" id="pushBadge">확인 중</span></h2>
+    <div class="status-line"><span class="dot" id="pushDot"></span><span id="pushStatusText">알림 상태를 확인하고 있어요…</span></div>
+    <button class="primary" id="enablePushBtn">홈 화면에 추가 후, 알림 켜기</button>
+    <p class="hint">
+      아이폰은 <b>공유 → 홈 화면에 추가</b>로 설치한 뒤 그 아이콘으로 열어야 알림을 켤 수 있어요(iOS 16.4+).
+      안드로이드는 크롬에서 바로 켤 수 있어요.
+    </p>
+  </section>
+
+  <!-- 기념일 추가 카드 -->
+  <section class="card">
+    <h2>기념일 추가</h2>
+    <div class="field">
+      <label for="name">이름 (예: 부모님 생신, 제사일)</label>
+      <input type="text" id="name" placeholder="예: 어머니 생신" maxlength="40">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="month">음력 월</label>
+        <input type="number" id="month" min="1" max="12" placeholder="예: 3">
+      </div>
+      <div class="field">
+        <label for="day">음력 일</label>
+        <input type="number" id="day" min="1" max="30" placeholder="예: 15">
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="leap"> 윤달(윤월) 기념일이에요</label>
+    <button class="primary" id="addBtn">추가하기</button>
+    <p class="hint" id="addHint"></p>
+  </section>
+
+  <!-- 목록 카드 -->
+  <section class="card">
+    <h2>등록된 기념일</h2>
+    <ul class="list" id="list"></ul>
+  </section>
+
+  <!-- 설정(고급) -->
+  <section class="card">
+    <details class="settings" id="settingsDetails">
+      <summary>⚙ 저장소 연결 설정 (최초 1회)</summary>
+      <p class="hint" style="margin-top:0;margin-bottom:12px;">
+        이 앱은 별도 서버 없이 이 GitHub 저장소(sjtiger234.github.io)에 데이터를 저장하고,
+        매일 GitHub Actions가 알림을 보냅니다. 저장하려면 이 저장소에 쓰기 권한이 있는
+        <b>개인 액세스 토큰(PAT)</b>이 필요해요. 토큰은 이 기기의 브라우저에만 저장되고
+        GitHub API 외에는 전송되지 않습니다.
+      </p>
+      <div class="field">
+        <label for="pat">GitHub Personal Access Token</label>
+        <input type="password" id="pat" placeholder="github_pat_...">
+      </div>
+      <button class="secondary" id="savePatBtn">토큰 저장</button>
+      <p class="hint">
+        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">여기서 토큰 발급</a> —
+        Repository access: <b>sjtiger234.github.io</b> 만 선택,
+        Permissions → <b>Contents: Read and write</b> 로 설정하세요.
+      </p>
+    </details>
+  </section>
+
+  <p class="hint" style="text-align:center;">데이터는 이 저장소의 <code>data/</code> 폴더에 저장됩니다.</p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="lib/korean-lunar-calendar.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

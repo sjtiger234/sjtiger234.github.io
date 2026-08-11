@@ -1,0 +1,14 @@
+{
+  "name": "lunar-anniversary-reminder",
+  "private": true,
+  "version": "1.0.0",
+  "description": "음력 기념일 알리미 - 하루 전/당일 아침 푸시 알림 발송용 스크립트 (GitHub Actions에서 실행)",
+  "type": "module",
+  "scripts": {
+    "send-reminders": "node scripts/send-reminders.mjs"
+  },
+  "dependencies": {
+    "korean-lunar-calendar": "^0.4.0",
+    "web-push": "^3.6.7"
+  }
+}

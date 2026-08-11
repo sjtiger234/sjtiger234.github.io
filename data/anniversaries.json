@@ -70,5 +70,13 @@
     "lunarDay": 19,
     "isLeap": false,
     "createdAt": "2026-08-11T04:53:07.056Z"
+  },
+  {
+    "id": "278f06f6-33f4-41e7-b339-4c32e18dbbc1",
+    "name": "제혁 생일",
+    "lunarMonth": 11,
+    "lunarDay": 2,
+    "isLeap": false,
+    "createdAt": "2026-08-11T04:53:33.294Z"
   }
 ]

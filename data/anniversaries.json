@@ -78,5 +78,13 @@
     "lunarDay": 2,
     "isLeap": false,
     "createdAt": "2026-08-11T04:53:33.294Z"
+  },
+  {
+    "id": "c3736714-10d5-4a17-b30b-f332f283fa10",
+    "name": "아빠 기일",
+    "lunarMonth": 2,
+    "lunarDay": 22,
+    "isLeap": false,
+    "createdAt": "2026-08-11T04:54:11.695Z"
   }
 ]

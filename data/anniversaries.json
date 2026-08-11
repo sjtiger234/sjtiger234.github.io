@@ -62,5 +62,13 @@
     "lunarDay": 2,
     "isLeap": false,
     "createdAt": "2026-08-11T04:52:34.418Z"
+  },
+  {
+    "id": "a6b875cb-7d7d-42f9-9b22-fb0236d47b40",
+    "name": "우봉 생일",
+    "lunarMonth": 6,
+    "lunarDay": 19,
+    "isLeap": false,
+    "createdAt": "2026-08-11T04:53:07.056Z"
   }
 ]

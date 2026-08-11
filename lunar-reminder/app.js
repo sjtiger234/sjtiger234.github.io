@@ -12,7 +12,6 @@ const SUB_PATH = 'data/subscriptions.json';
 const VAPID_PUBLIC_KEY = 'BJSSz6qkzRUkZd2O3acGfjDybpSFl0lLxHCSseaCDPZSKMvoT0mQT2nEsHPMkdkO9Gk6q4Yio2Bn85lv64OGaks';
 
 const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
-const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;
 
 /* ===== 유틸 ===== */
 const $ = (id) => document.getElementById(id);
@@ -67,26 +66,37 @@ function dDay(s) {
 }
 
 /* ===== GitHub Contents API ===== */
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary);
+}
+
+function base64ToUtf8(b64) {
+  const binary = atob(b64.replace(/\n/g, ''));
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+// raw.githubusercontent.com은 CDN 캐시 지연이 있어 방금 저장한 내용을 못 볼 수 있으므로,
+// 항상 api.github.com(캐시 없음)에서 content와 sha를 함께 읽어 일관성을 보장한다.
 async function githubGetFile(path) {
-  const res = await fetch(`${RAW_BASE}/${path}?t=${Date.now()}`, { cache: 'no-store' });
+  const pat = getPat();
+  const headers = { Accept: 'application/vnd.github+json' };
+  if (pat) headers.Authorization = `Bearer ${pat}`;
+  const res = await fetch(`${API_BASE}/${path}?ref=${BRANCH}`, { headers, cache: 'no-store' });
   if (res.status === 404) return { data: [], sha: null };
   if (!res.ok) throw new Error(`불러오기 실패 (${res.status})`);
-  const data = await res.json();
-  // sha는 커밋 시 필요하므로 API로 별도 조회
-  let sha = null;
-  try {
-    const metaRes = await fetch(`${API_BASE}/${path}?ref=${BRANCH}`, {
-      headers: { Accept: 'application/vnd.github+json' },
-    });
-    if (metaRes.ok) sha = (await metaRes.json()).sha;
-  } catch (e) { /* 무시: 신규 파일일 수 있음 */ }
-  return { data, sha };
+  const json = await res.json();
+  const data = JSON.parse(base64ToUtf8(json.content));
+  return { data, sha: json.sha };
 }
 
 async function githubPutFile(path, jsonValue, sha, message) {
   const pat = getPat();
   if (!pat) throw new Error('먼저 설정에서 GitHub 토큰을 저장해주세요.');
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(jsonValue, null, 2) + '\n')));
+  const content = utf8ToBase64(JSON.stringify(jsonValue, null, 2) + '\n');
   const body = { message, content, branch: BRANCH };
   if (sha) body.sha = sha;
   const res = await fetch(`${API_BASE}/${path}`, {

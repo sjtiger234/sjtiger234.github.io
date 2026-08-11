@@ -102,5 +102,13 @@
     "lunarDay": 26,
     "isLeap": false,
     "createdAt": "2026-08-11T05:42:43.692Z"
+  },
+  {
+    "id": "945acd30-0ff5-4cda-9c04-ca8cb5619386",
+    "name": "언니 생일",
+    "lunarMonth": 6,
+    "lunarDay": 28,
+    "isLeap": false,
+    "createdAt": "2026-08-11T05:43:04.232Z"
   }
 ]

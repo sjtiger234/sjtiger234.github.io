@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "4691c95b-2e5b-4d8e-9854-77cc4cbd41af",
+    "name": "내생일",
+    "lunarMonth": 6,
+    "lunarDay": 6,
+    "isLeap": false,
+    "createdAt": "2026-08-11T03:29:00.697Z"
+  }
+]

@@ -30,5 +30,13 @@
     "lunarDay": 15,
     "isLeap": false,
     "createdAt": "2026-08-11T03:57:50.383Z"
+  },
+  {
+    "id": "c74c9be4-4a2d-4a3c-88fe-13eae7b3eeb5",
+    "name": "엄마 생신",
+    "lunarMonth": 7,
+    "lunarDay": 14,
+    "isLeap": false,
+    "createdAt": "2026-08-11T03:58:36.586Z"
   }
 ]

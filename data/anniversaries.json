@@ -38,5 +38,13 @@
     "lunarDay": 14,
     "isLeap": false,
     "createdAt": "2026-08-11T04:02:54.693Z"
+  },
+  {
+    "id": "efe88579-ebb9-4bb1-8a3e-593cbe428bb6",
+    "name": "은주 생일",
+    "lunarMonth": 7,
+    "lunarDay": 28,
+    "isLeap": false,
+    "createdAt": "2026-08-11T04:51:54.436Z"
   }
 ]

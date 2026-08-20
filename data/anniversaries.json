@@ -111,5 +111,14 @@
     "lunarDay": 17,
     "isLeap": false,
     "createdAt": "2026-08-20T23:43:01.136Z"
+  },
+  {
+    "id": "fcb79860-0b0c-469d-8b62-d40b69b30dae",
+    "name": "태린 생일",
+    "calendarType": "solar",
+    "lunarMonth": 8,
+    "lunarDay": 7,
+    "isLeap": false,
+    "createdAt": "2026-08-20T23:43:25.257Z"
   }
 ]

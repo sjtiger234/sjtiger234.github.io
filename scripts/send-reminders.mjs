@@ -50,6 +50,24 @@ function solarDateStringsForLunar(lunarMonth, lunarDay, isLeap, centerYear) {
   return results;
 }
 
+// 양력 기념일: 해당 연도에 실제로 존재하는 날짜(2/29 등)만 포함
+function solarDateStringsForPlainSolar(month, day, centerYear) {
+  const results = [];
+  for (const year of [centerYear, centerYear + 1]) {
+    const d = new Date(Date.UTC(year, month - 1, day));
+    if (d.getUTCMonth() !== month - 1) continue;
+    results.push(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+  }
+  return results;
+}
+
+function solarDateStringsForItem(item, centerYear) {
+  if (item.calendarType === 'solar') {
+    return solarDateStringsForPlainSolar(item.lunarMonth, item.lunarDay, centerYear);
+  }
+  return solarDateStringsForLunar(item.lunarMonth, item.lunarDay, !!item.isLeap, centerYear);
+}
+
 async function main() {
   const now = new Date();
   const todayStr = seoulDateString(now);
@@ -73,7 +91,7 @@ async function main() {
   }
 
   for (const item of anniversaries) {
-    const solarDates = solarDateStringsForLunar(item.lunarMonth, item.lunarDay, !!item.isLeap, centerYear);
+    const solarDates = solarDateStringsForItem(item, centerYear);
     if (solarDates.includes(todayStr)) {
       messages.push({ title: '오늘은 기념일이에요 🎉', body: `오늘은 "${item.name}"입니다.`, tag: `anniv-${item.id}-today` });
     }

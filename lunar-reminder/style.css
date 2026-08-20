@@ -1,174 +1,345 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+'use strict';
 
-:root {
-  --bg: #0F1C35;
-  --surface: #16274A;
-  --surface-2: #1C2F52;
-  --border: rgba(234,242,250,.10);
-  --text-1: #F4F8FD;
-  --text-2: #B7C6DE;
-  --text-3: #7A90AA;
-  --gold: #C8A95A;
-  --gold-dim: rgba(200,169,90,.14);
-  --danger: #E0665A;
-  --ok: #6FBF8F;
-  --radius: 14px;
-  --sans: "Noto Sans KR", sans-serif;
-}
+/* ===== 설정 ===== */
+const OWNER = 'sjtiger234';
+const REPO = 'sjtiger234.github.io';
+const BRANCH = 'main';
+const ANNIV_PATH = 'data/anniversaries.json';
+const SUB_PATH = 'data/subscriptions.json';
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-font-smoothing: antialiased; }
-body {
-  background: var(--bg);
-  color: var(--text-1);
-  font-family: var(--sans);
-  line-height: 1.6;
-  min-height: 100vh;
-  padding-bottom: 48px;
+// GitHub Actions 시크릿의 VAPID_PRIVATE_KEY와 짝이 되는 공개키.
+// `npx web-push generate-vapid-keys` 로 발급받은 뒤 이 자리에 붙여넣으세요. (공개키는 비밀값이 아닙니다)
+const VAPID_PUBLIC_KEY = 'BJSSz6qkzRUkZd2O3acGfjDybpSFl0lLxHCSseaCDPZSKMvoT0mQT2nEsHPMkdkO9Gk6q4Yio2Bn85lv64OGaks';
+
+const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
+
+/* ===== 유틸 ===== */
+const $ = (id) => document.getElementById(id);
+let toastTimer = null;
+let calType = 'lunar';
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
 }
 
-.wrap { max-width: 480px; margin: 0 auto; padding: 20px 18px 40px; }
+function getPat() { return localStorage.getItem('lr_pat') || ''; }
+function setPat(v) { localStorage.setItem('lr_pat', v); }
 
-header.top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 22px 0 18px;
-}
-header.top .moon {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--gold-dim);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-}
-header.top h1 { font-size: 1.15rem; font-weight: 700; }
-header.top p { font-size: .78rem; color: var(--text-3); margin-top: 2px; }
-
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
-  margin-bottom: 16px;
-}
-.card h2 {
-  font-size: .95rem;
-  font-weight: 700;
-  margin-bottom: 14px;
-  display: flex; align-items: center; gap: 8px;
-}
-.card h2 .badge {
-  font-size: .65rem;
-  font-weight: 500;
-  color: var(--gold);
-  background: var(--gold-dim);
-  padding: 2px 8px;
-  border-radius: 20px;
+function todayYMD() {
+  const d = new Date();
+  return { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() };
 }
 
-.field { margin-bottom: 12px; }
-.field label {
-  display: block;
-  font-size: .78rem;
-  color: var(--text-2);
-  margin-bottom: 6px;
-}
-.field input[type="text"],
-.field input[type="number"],
-.field input[type="password"],
-.field select {
-  width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 11px 12px;
-  color: var(--text-1);
-  font-size: .95rem;
-  font-family: var(--sans);
-}
-.field input:focus, .field select:focus { outline: 2px solid var(--gold); outline-offset: -1px; }
+function ymdToNum(y, m, d) { return y * 10000 + m * 100 + d; }
 
-.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-.check {
-  display: flex; align-items: center; gap: 8px;
-  font-size: .85rem; color: var(--text-2);
-  margin-bottom: 14px;
+/* 다가오는 양력 날짜 계산 (윤달이 없는 해는 건너뜀) */
+function nextSolarOccurrence(lunarMonth, lunarDay, isLeap) {
+  const t = todayYMD();
+  const todayNum = ymdToNum(t.y, t.m, t.d);
+  for (let offset = 0; offset < 6; offset++) {
+    const year = t.y + offset;
+    const cal = new KoreanLunarCalendar();
+    const ok = cal.setLunarDate(year, lunarMonth, lunarDay, isLeap);
+    if (!ok) continue;
+    const s = cal.getSolarCalendar();
+    const num = ymdToNum(s.year, s.month, s.day);
+    if (num >= todayNum) return s;
+  }
+  return null;
 }
-.check input { width: 17px; height: 17px; }
 
-button {
-  font-family: var(--sans);
-  font-size: .9rem;
-  font-weight: 700;
-  border: none;
-  border-radius: 10px;
-  padding: 12px 16px;
-  cursor: pointer;
-  width: 100%;
-  transition: opacity .15s, transform .1s;
+/* 양력 기념일의 다음 날짜 계산 (2/29처럼 평년엔 없는 날짜는 건너뜀) */
+function nextPlainSolarOccurrence(month, day) {
+  const t = todayYMD();
+  const todayNum = ymdToNum(t.y, t.m, t.d);
+  for (let offset = 0; offset < 6; offset++) {
+    const year = t.y + offset;
+    const d = new Date(year, month - 1, day);
+    if (d.getMonth() !== month - 1) continue;
+    const num = ymdToNum(year, month, day);
+    if (num >= todayNum) return { year, month, day };
+  }
+  return null;
 }
-button:active { transform: scale(.98); }
-button.primary { background: var(--gold); color: #1C2100; }
-button.secondary { background: var(--surface-2); color: var(--text-1); border: 1px solid var(--border); }
-button.danger { background: transparent; color: var(--danger); border: 1px solid rgba(224,102,90,.35); width: auto; padding: 6px 12px; font-size: .78rem; }
-button:disabled { opacity: .5; cursor: not-allowed; }
 
-.status-line {
-  display: flex; align-items: center; gap: 8px;
-  font-size: .82rem; color: var(--text-2);
-  margin-bottom: 12px;
+/* 기념일 항목의 달력 종류(음력/양력)에 맞춰 다음 양력 날짜를 계산 */
+function nextOccurrence(item) {
+  if (item.calendarType === 'solar') {
+    return nextPlainSolarOccurrence(item.lunarMonth, item.lunarDay);
+  }
+  return nextSolarOccurrence(item.lunarMonth, item.lunarDay, !!item.isLeap);
 }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
-.dot.on { background: var(--ok); }
-.dot.off { background: var(--danger); }
 
-.list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.item {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 13px 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
+function formatSolar(s) {
+  if (!s) return '계산 불가';
+  return `${s.year}.${String(s.month).padStart(2, '0')}.${String(s.day).padStart(2, '0')}`;
 }
-.item .info .name { font-weight: 700; font-size: .95rem; margin-bottom: 3px; }
-.item .info .sub { font-size: .78rem; color: var(--text-3); }
-.item .info .next {
-  font-size: .78rem; color: var(--gold); margin-top: 3px; font-weight: 500;
-}
-.empty { color: var(--text-3); font-size: .85rem; text-align: center; padding: 20px 0; }
 
-.hint { font-size: .76rem; color: var(--text-3); margin-top: 10px; line-height: 1.6; }
-.hint a { color: var(--gold); text-decoration: underline; }
-
-.toast {
-  position: fixed;
-  left: 50%; bottom: 24px;
-  transform: translateX(-50%);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  color: var(--text-1);
-  padding: 11px 18px;
-  border-radius: 30px;
-  font-size: .83rem;
-  box-shadow: 0 8px 24px rgba(0,0,0,.35);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s, transform .25s;
-  z-index: 50;
-  max-width: 90%;
-  text-align: center;
+function dDay(s) {
+  if (!s) return '';
+  const target = new Date(s.year, s.month - 1, s.day);
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const diff = Math.round((target - t) / 86400000);
+  if (diff === 0) return '오늘';
+  if (diff === 1) return '내일';
+  return `D-${diff}`;
 }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
 
-details.settings summary {
-  cursor: pointer;
-  font-size: .82rem;
-  color: var(--text-3);
-  list-style: none;
+/* ===== GitHub Contents API ===== */
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary);
 }
-details.settings summary::-webkit-details-marker { display: none; }
-details.settings[open] summary { margin-bottom: 12px; color: var(--text-2); }
+
+function base64ToUtf8(b64) {
+  const binary = atob(b64.replace(/\n/g, ''));
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder('utf-8').decode(bytes);
+}
+
+// raw.githubusercontent.com은 CDN 캐시 지연이 있어 방금 저장한 내용을 못 볼 수 있으므로,
+// 항상 api.github.com(캐시 없음)에서 content와 sha를 함께 읽어 일관성을 보장한다.
+async function githubGetFile(path) {
+  const pat = getPat();
+  const headers = { Accept: 'application/vnd.github+json' };
+  if (pat) headers.Authorization = `Bearer ${pat}`;
+  const res = await fetch(`${API_BASE}/${path}?ref=${BRANCH}`, { headers, cache: 'no-store' });
+  if (res.status === 404) return { data: [], sha: null };
+  if (!res.ok) throw new Error(`불러오기 실패 (${res.status})`);
+  const json = await res.json();
+  const data = JSON.parse(base64ToUtf8(json.content));
+  return { data, sha: json.sha };
+}
+
+async function githubPutFile(path, jsonValue, sha, message) {
+  const pat = getPat();
+  if (!pat) throw new Error('먼저 설정에서 GitHub 토큰을 저장해주세요.');
+  const content = utf8ToBase64(JSON.stringify(jsonValue, null, 2) + '\n');
+  const body = { message, content, branch: BRANCH };
+  if (sha) body.sha = sha;
+  const res = await fetch(`${API_BASE}/${path}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${pat}`,
+      Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `저장 실패 (${res.status})`);
+  }
+  return res.json();
+}
+
+/* ===== 기념일 목록 ===== */
+async function loadAnniversaries() {
+  const list = $('list');
+  list.innerHTML = '<li class="empty">불러오는 중…</li>';
+  try {
+    const { data } = await githubGetFile(ANNIV_PATH);
+    renderAnniversaries(Array.isArray(data) ? data : []);
+  } catch (e) {
+    list.innerHTML = `<li class="empty">불러오기 실패: ${e.message}</li>`;
+  }
+}
+
+function renderAnniversaries(items) {
+  const list = $('list');
+  if (!items.length) {
+    list.innerHTML = '<li class="empty">아직 등록된 기념일이 없어요.</li>';
+    return;
+  }
+  const sortKey = (i) => {
+    const s = nextOccurrence(i);
+    return s ? ymdToNum(s.year, s.month, s.day) : Infinity;
+  };
+  const sorted = [...items].sort((a, b) => sortKey(a) - sortKey(b));
+  list.innerHTML = '';
+  for (const item of sorted) {
+    const s = nextOccurrence(item);
+    const calLabel = item.calendarType === 'solar' ? '양력' : '음력';
+    const li = document.createElement('li');
+    li.className = 'item';
+    li.innerHTML = `
+      <div class="info">
+        <div class="name">${escapeHtml(item.name)}</div>
+        <div class="sub">${calLabel} ${item.lunarMonth}월 ${item.lunarDay}일${item.isLeap ? ' (윤달)' : ''}</div>
+        <div class="next">다음: ${formatSolar(s)} (${dDay(s)})</div>
+      </div>
+      <button class="danger" data-id="${item.id}">삭제</button>
+    `;
+    li.querySelector('button').addEventListener('click', () => deleteAnniversary(item.id));
+    list.appendChild(li);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function addAnniversary() {
+  const name = $('name').value.trim();
+  const month = parseInt($('month').value, 10);
+  const day = parseInt($('day').value, 10);
+  const isLunar = calType === 'lunar';
+  const isLeap = isLunar && $('leap').checked;
+  const hint = $('addHint');
+  hint.textContent = '';
+
+  if (!name) return (hint.textContent = '이름을 입력해주세요.');
+  if (!month || month < 1 || month > 12) return (hint.textContent = '월은 1~12 사이여야 해요.');
+  if (!day || day < 1 || day > 31) return (hint.textContent = '일은 1~31 사이여야 해요.');
+
+  if (isLunar) {
+    const test = new KoreanLunarCalendar();
+    if (!test.setLunarDate(new Date().getFullYear(), month, day, isLeap)
+        && !test.setLunarDate(new Date().getFullYear() + 1, month, day, isLeap)) {
+      return (hint.textContent = '유효하지 않은 음력 날짜예요 (윤달 여부를 확인해주세요).');
+    }
+  } else {
+    const y = new Date().getFullYear();
+    const validThisYear = new Date(y, month - 1, day).getMonth() === month - 1;
+    const validNextYear = new Date(y + 1, month - 1, day).getMonth() === month - 1;
+    if (!validThisYear && !validNextYear) {
+      return (hint.textContent = '유효하지 않은 양력 날짜예요.');
+    }
+  }
+
+  const btn = $('addBtn');
+  btn.disabled = true;
+  try {
+    const { data, sha } = await githubGetFile(ANNIV_PATH);
+    const items = Array.isArray(data) ? data : [];
+    items.push({
+      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+      name,
+      calendarType: calType,
+      lunarMonth: month,
+      lunarDay: day,
+      isLeap,
+      createdAt: new Date().toISOString(),
+    });
+    await githubPutFile(ANNIV_PATH, items, sha, `기념일 추가: ${name}`);
+    $('name').value = ''; $('month').value = ''; $('day').value = ''; $('leap').checked = false;
+    toast('기념일을 추가했어요.');
+    renderAnniversaries(items);
+  } catch (e) {
+    hint.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function deleteAnniversary(id) {
+  if (!confirm('이 기념일을 삭제할까요?')) return;
+  try {
+    const { data, sha } = await githubGetFile(ANNIV_PATH);
+    const items = (Array.isArray(data) ? data : []).filter((i) => i.id !== id);
+    await githubPutFile(ANNIV_PATH, items, sha, '기념일 삭제');
+    toast('삭제했어요.');
+    renderAnniversaries(items);
+  } catch (e) {
+    toast(`삭제 실패: ${e.message}`);
+  }
+}
+
+/* ===== 푸시 알림 ===== */
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+async function refreshPushStatus() {
+  const dot = $('pushDot'), text = $('pushStatusText'), badge = $('pushBadge'), btn = $('enablePushBtn');
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    dot.className = 'dot off'; badge.textContent = '미지원';
+    text.textContent = '이 브라우저는 웹 푸시 알림을 지원하지 않아요.';
+    btn.disabled = true;
+    return;
+  }
+  const reg = await navigator.serviceWorker.getRegistration('./');
+  const sub = reg ? await reg.pushManager.getSubscription() : null;
+  if (sub && Notification.permission === 'granted') {
+    dot.className = 'dot on'; badge.textContent = '켜짐';
+    text.textContent = '이 기기에서 알림을 받을 수 있어요.';
+    btn.textContent = '알림 다시 켜기';
+  } else {
+    dot.className = 'dot off'; badge.textContent = '꺼짐';
+    text.textContent = Notification.permission === 'denied'
+      ? '알림이 차단되어 있어요. 브라우저 설정에서 허용해주세요.'
+      : '아직 알림이 꺼져 있어요.';
+  }
+}
+
+async function enablePush() {
+  if (VAPID_PUBLIC_KEY.startsWith('REPLACE_WITH')) {
+    toast('앱 설정에 VAPID 공개키가 아직 입력되지 않았어요.');
+    return;
+  }
+  try {
+    const reg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      toast('알림 권한이 필요해요.');
+      return;
+    }
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    const { data, sha } = await githubGetFile(SUB_PATH);
+    const subs = Array.isArray(data) ? data : [];
+    const exists = subs.some((s) => s.endpoint === sub.endpoint);
+    if (!exists) {
+      subs.push(JSON.parse(JSON.stringify(sub)));
+      await githubPutFile(SUB_PATH, subs, sha, '푸시 구독 추가');
+    }
+    toast('알림을 켰어요!');
+    await refreshPushStatus();
+  } catch (e) {
+    toast(`알림 설정 실패: ${e.message}`);
+  }
+}
+
+/* ===== 초기화 ===== */
+document.addEventListener('DOMContentLoaded', () => {
+  $('pat').value = getPat();
+  $('savePatBtn').addEventListener('click', () => {
+    setPat($('pat').value.trim());
+    toast('토큰을 저장했어요.');
+    $('settingsDetails').removeAttribute('open');
+  });
+  $('addBtn').addEventListener('click', addAnniversary);
+  $('enablePushBtn').addEventListener('click', enablePush);
+
+  document.querySelectorAll('#calTypeGroup .seg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      calType = btn.dataset.cal;
+      document.querySelectorAll('#calTypeGroup .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      const isLunar = calType === 'lunar';
+      $('monthLabel').textContent = isLunar ? '음력 월' : '양력 월';
+      $('dayLabel').textContent = isLunar ? '음력 일' : '양력 일';
+      $('leapRow').style.display = isLunar ? 'flex' : 'none';
+      if (!isLunar) $('leap').checked = false;
+    });
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});
+  }
+
+  refreshPushStatus();
+  loadAnniversaries();
+});

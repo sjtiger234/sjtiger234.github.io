@@ -16,6 +16,7 @@ const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
 /* ===== 유틸 ===== */
 const $ = (id) => document.getElementById(id);
 let toastTimer = null;
+let calType = 'lunar';
 function toast(msg) {
   const el = $('toast');
   el.textContent = msg;
@@ -48,6 +49,28 @@ function nextSolarOccurrence(lunarMonth, lunarDay, isLeap) {
     if (num >= todayNum) return s;
   }
   return null;
+}
+
+/* 양력 기념일의 다음 날짜 계산 (2/29처럼 평년엔 없는 날짜는 건너뜀) */
+function nextPlainSolarOccurrence(month, day) {
+  const t = todayYMD();
+  const todayNum = ymdToNum(t.y, t.m, t.d);
+  for (let offset = 0; offset < 6; offset++) {
+    const year = t.y + offset;
+    const d = new Date(year, month - 1, day);
+    if (d.getMonth() !== month - 1) continue;
+    const num = ymdToNum(year, month, day);
+    if (num >= todayNum) return { year, month, day };
+  }
+  return null;
+}
+
+/* 기념일 항목의 달력 종류(음력/양력)에 맞춰 다음 양력 날짜를 계산 */
+function nextOccurrence(item) {
+  if (item.calendarType === 'solar') {
+    return nextPlainSolarOccurrence(item.lunarMonth, item.lunarDay);
+  }
+  return nextSolarOccurrence(item.lunarMonth, item.lunarDay, !!item.isLeap);
 }
 
 function formatSolar(s) {
@@ -134,19 +157,20 @@ function renderAnniversaries(items) {
     return;
   }
   const sortKey = (i) => {
-    const s = nextSolarOccurrence(i.lunarMonth, i.lunarDay, !!i.isLeap);
+    const s = nextOccurrence(i);
     return s ? ymdToNum(s.year, s.month, s.day) : Infinity;
   };
   const sorted = [...items].sort((a, b) => sortKey(a) - sortKey(b));
   list.innerHTML = '';
   for (const item of sorted) {
-    const s = nextSolarOccurrence(item.lunarMonth, item.lunarDay, !!item.isLeap);
+    const s = nextOccurrence(item);
+    const calLabel = item.calendarType === 'solar' ? '양력' : '음력';
     const li = document.createElement('li');
     li.className = 'item';
     li.innerHTML = `
       <div class="info">
         <div class="name">${escapeHtml(item.name)}</div>
-        <div class="sub">음력 ${item.lunarMonth}월 ${item.lunarDay}일${item.isLeap ? ' (윤달)' : ''}</div>
+        <div class="sub">${calLabel} ${item.lunarMonth}월 ${item.lunarDay}일${item.isLeap ? ' (윤달)' : ''}</div>
         <div class="next">다음: ${formatSolar(s)} (${dDay(s)})</div>
       </div>
       <button class="danger" data-id="${item.id}">삭제</button>
@@ -164,18 +188,28 @@ async function addAnniversary() {
   const name = $('name').value.trim();
   const month = parseInt($('month').value, 10);
   const day = parseInt($('day').value, 10);
-  const isLeap = $('leap').checked;
+  const isLunar = calType === 'lunar';
+  const isLeap = isLunar && $('leap').checked;
   const hint = $('addHint');
   hint.textContent = '';
 
   if (!name) return (hint.textContent = '이름을 입력해주세요.');
-  if (!month || month < 1 || month > 12) return (hint.textContent = '음력 월은 1~12 사이여야 해요.');
-  if (!day || day < 1 || day > 30) return (hint.textContent = '음력 일은 1~30 사이여야 해요.');
+  if (!month || month < 1 || month > 12) return (hint.textContent = '월은 1~12 사이여야 해요.');
+  if (!day || day < 1 || day > 31) return (hint.textContent = '일은 1~31 사이여야 해요.');
 
-  const test = new KoreanLunarCalendar();
-  if (!test.setLunarDate(new Date().getFullYear(), month, day, isLeap)
-      && !test.setLunarDate(new Date().getFullYear() + 1, month, day, isLeap)) {
-    return (hint.textContent = '유효하지 않은 음력 날짜예요 (윤달 여부를 확인해주세요).');
+  if (isLunar) {
+    const test = new KoreanLunarCalendar();
+    if (!test.setLunarDate(new Date().getFullYear(), month, day, isLeap)
+        && !test.setLunarDate(new Date().getFullYear() + 1, month, day, isLeap)) {
+      return (hint.textContent = '유효하지 않은 음력 날짜예요 (윤달 여부를 확인해주세요).');
+    }
+  } else {
+    const y = new Date().getFullYear();
+    const validThisYear = new Date(y, month - 1, day).getMonth() === month - 1;
+    const validNextYear = new Date(y + 1, month - 1, day).getMonth() === month - 1;
+    if (!validThisYear && !validNextYear) {
+      return (hint.textContent = '유효하지 않은 양력 날짜예요.');
+    }
   }
 
   const btn = $('addBtn');
@@ -186,6 +220,7 @@ async function addAnniversary() {
     items.push({
       id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
       name,
+      calendarType: calType,
       lunarMonth: month,
       lunarDay: day,
       isLeap,
@@ -288,6 +323,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('addBtn').addEventListener('click', addAnniversary);
   $('enablePushBtn').addEventListener('click', enablePush);
+
+  document.querySelectorAll('#calTypeGroup .seg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      calType = btn.dataset.cal;
+      document.querySelectorAll('#calTypeGroup .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      const isLunar = calType === 'lunar';
+      $('monthLabel').textContent = isLunar ? '음력 월' : '양력 월';
+      $('dayLabel').textContent = isLunar ? '음력 일' : '양력 일';
+      $('leapRow').style.display = isLunar ? 'flex' : 'none';
+      if (!isLunar) $('leap').checked = false;
+    });
+  });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(() => {});

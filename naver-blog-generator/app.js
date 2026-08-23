@@ -129,7 +129,12 @@ let state = {
   summaryNotes: '',
   chosenTitleIndex: 0,
   lastTitleOptions: [],
+  aiEnabled: false,
+  apiKey: '',
+  aiModel: 'gemini-2.5-flash',
 };
+
+let lastAIJson = null;
 
 let sectionSeq = 0;
 let photoSeq = 0;
@@ -332,6 +337,33 @@ function buildDatePhrase(dateStr) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일, `;
 }
 
+function defaultSubtitle(category, i) {
+  return DEFAULT_SUBTITLES[category][i % DEFAULT_SUBTITLES[category].length] + (i >= DEFAULT_SUBTITLES[category].length ? ` ${i + 1}` : '');
+}
+
+function distributeIntoBlocks(items, photos) {
+  const blocks = [];
+  if (items.length === 0) {
+    photos.forEach((p) => blocks.push({ type: 'photo', photo: p }));
+    return blocks;
+  }
+  if (photos.length === 0) {
+    items.forEach((t) => blocks.push({ type: 'text', text: t }));
+    return blocks;
+  }
+  const gaps = photos.length + 1;
+  const perGap = items.length / gaps;
+  let idx = 0;
+  let pIdx = 0;
+  for (let g = 0; g < gaps; g++) {
+    const end = g === gaps - 1 ? items.length : Math.round(perGap * (g + 1));
+    for (; idx < end; idx++) blocks.push({ type: 'text', text: items[idx] });
+    if (pIdx < photos.length) { blocks.push({ type: 'photo', photo: photos[pIdx] }); pIdx++; }
+  }
+  while (pIdx < photos.length) { blocks.push({ type: 'photo', photo: photos[pIdx] }); pIdx++; }
+  return blocks;
+}
+
 function generatePost(s) {
   const category = s.category;
   const place = s.place || '이곳';
@@ -354,36 +386,12 @@ function generatePost(s) {
   const title = titleOptions[Math.min(s.chosenTitleIndex, titleOptions.length - 1)];
 
   const builtSections = s.sections.map((sec, i) => {
-    const subtitle = sec.subtitle.trim() || DEFAULT_SUBTITLES[category][i % DEFAULT_SUBTITLES[category].length] + (i >= DEFAULT_SUBTITLES[category].length ? ` ${i + 1}` : '');
+    const subtitle = sec.subtitle.trim() || defaultSubtitle(category, i);
     const bullets = splitBullets(sec.notes);
-    const sentences = bullets.map((b, bi) => {
-      const conn = bi === 0 ? '' : pick(CONNECTORS);
-      return conn + ensureSentence(b, category);
-    });
+    const sentences = bullets.map((b, bi) => (bi === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
     if (sentences.length === 0 && sec.photos.length === 0) return null;
     if (sentences.length > 0) sentences.push(pick(SECTION_CLOSERS[category]));
-
-    const photos = sec.photos;
-    const blocks = [];
-    if (photos.length === 0) {
-      blocks.push({ type: 'text', text: sentences.join(' ') });
-    } else if (sentences.length === 0) {
-      photos.forEach((p) => blocks.push({ type: 'photo', photo: p }));
-    } else {
-      const gaps = photos.length + 1;
-      const perGap = sentences.length / gaps;
-      let sIdx = 0;
-      let pIdx = 0;
-      for (let g = 0; g < gaps; g++) {
-        const end = g === gaps - 1 ? sentences.length : Math.round(perGap * (g + 1));
-        const chunk = sentences.slice(sIdx, end).join(' ');
-        if (chunk) blocks.push({ type: 'text', text: chunk });
-        sIdx = end;
-        if (pIdx < photos.length) { blocks.push({ type: 'photo', photo: photos[pIdx] }); pIdx++; }
-      }
-      while (pIdx < photos.length) { blocks.push({ type: 'photo', photo: photos[pIdx] }); pIdx++; }
-    }
-    return { subtitle, blocks };
+    return { subtitle, blocks: distributeIntoBlocks(sentences, sec.photos) };
   }).filter(Boolean);
 
   const summaryBullets = splitBullets(s.summaryNotes);
@@ -393,7 +401,54 @@ function generatePost(s) {
 
   const tags = buildTags(s);
 
-  return { title, titleOptions, introParas, toc: builtSections.map((b) => b.subtitle), sections: builtSections, summarySentences, tags, rating: s.rating };
+  return { title, titleOptions, introParas, toc: builtSections.map((b) => b.subtitle), sections: builtSections, summarySentences, tags, rating: s.rating, source: 'template' };
+}
+
+/* ---------- AI(Gemini) 결과를 같은 구조로 합성 ---------- */
+
+function composeFromAI(s, ai) {
+  const category = s.category;
+
+  const templateTitles = buildTitleOptions(s);
+  const aiTitles = [ai.title, ...(Array.isArray(ai.titleAlternatives) ? ai.titleAlternatives : [])].filter(Boolean);
+  const titleOptions = Array.from(new Set([...aiTitles, ...templateTitles])).slice(0, 5);
+  state.lastTitleOptions = titleOptions;
+  const title = titleOptions[Math.min(s.chosenTitleIndex, titleOptions.length - 1)];
+
+  const introParas = Array.isArray(ai.intro) && ai.intro.length
+    ? ai.intro.filter(Boolean)
+    : [pick(INTRO_OPENERS[category]).replace(/\{[a-z]+\}/g, '').replace(/\s+/g, ' ').trim(), pick(INTRO_CLOSERS[category])];
+
+  const aiSections = Array.isArray(ai.sections) ? ai.sections : [];
+  const builtSections = s.sections.map((sec, i) => {
+    const fallbackSubtitle = sec.subtitle.trim() || defaultSubtitle(category, i);
+    const aiSec = aiSections[i];
+    const subtitle = (aiSec && aiSec.subtitle) || fallbackSubtitle;
+    let paragraphs = aiSec && Array.isArray(aiSec.paragraphs) ? aiSec.paragraphs.filter(Boolean) : [];
+    if (paragraphs.length === 0) {
+      const bullets = splitBullets(sec.notes);
+      paragraphs = bullets.map((b, bi) => (bi === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
+      if (paragraphs.length) paragraphs.push(pick(SECTION_CLOSERS[category]));
+    }
+    if (paragraphs.length === 0 && sec.photos.length === 0) return null;
+    return { subtitle, blocks: distributeIntoBlocks(paragraphs, sec.photos) };
+  }).filter(Boolean);
+
+  let summarySentences;
+  if (Array.isArray(ai.summary) && ai.summary.length) {
+    summarySentences = ai.summary.filter(Boolean);
+  } else {
+    const bullets = splitBullets(s.summaryNotes);
+    summarySentences = bullets.map((b, i) => (i === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
+    if (s.rating > 0) summarySentences.unshift(RATING_TEXT[s.rating]);
+    summarySentences.push(pick(SUMMARY_CLOSERS[category]));
+  }
+
+  const templateTags = buildTags(s);
+  const aiTags = Array.isArray(ai.tags) ? ai.tags.map((t) => String(t).replace(/^#/, '').replace(/\s+/g, '')).filter(Boolean) : [];
+  const tags = Array.from(new Set([...aiTags, ...templateTags])).slice(0, 20);
+
+  return { title, titleOptions, introParas, toc: builtSections.map((b) => b.subtitle), sections: builtSections, summarySentences, tags, rating: s.rating, source: 'ai' };
 }
 
 /* ---------- 렌더: 미리보기 ---------- */
@@ -401,7 +456,17 @@ function generatePost(s) {
 let lastPost = null;
 
 function renderPreview() {
+  lastAIJson = null;
   const post = generatePost(state);
+  renderPostToDom(post);
+}
+
+function renderAIPost(ai) {
+  const post = composeFromAI(state, ai);
+  renderPostToDom(post);
+}
+
+function renderPostToDom(post) {
   lastPost = post;
   const el = document.getElementById('previewArticle');
 
@@ -436,10 +501,14 @@ function renderPreview() {
 
   const tagsHtml = `<div class="tags-line">${post.tags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join(' ')}</div>`;
 
+  const sourceBadge = post.source === 'ai'
+    ? '<span class="source-badge ai">✨ AI 다듬기 적용</span>'
+    : '<span class="source-badge">규칙 기반 초안</span>';
+
   el.innerHTML = `
     <div class="title-choices">${titleChoices}</div>
     <h1 class="post-title">${escapeHtml(post.title)}</h1>
-    <div class="post-meta">${escapeHtml(CATEGORY_LABEL[state.category])}${state.region ? ' · ' + escapeHtml(state.region) : ''}${state.date ? ' · ' + escapeHtml(state.date) : ''}</div>
+    <div class="post-meta">${sourceBadge} ${escapeHtml(CATEGORY_LABEL[state.category])}${state.region ? ' · ' + escapeHtml(state.region) : ''}${state.date ? ' · ' + escapeHtml(state.date) : ''}</div>
     ${tocHtml}
     <div class="post-intro">${post.introParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>
     ${sectionsHtml}
@@ -448,7 +517,10 @@ function renderPreview() {
   `;
 
   el.querySelectorAll('input[name="titleChoice"]').forEach((r) => {
-    r.onchange = (e) => { state.chosenTitleIndex = Number(e.target.value); renderPreview(); };
+    r.onchange = (e) => {
+      state.chosenTitleIndex = Number(e.target.value);
+      if (lastAIJson) renderAIPost(lastAIJson); else renderPreview();
+    };
   });
 }
 
@@ -578,6 +650,125 @@ function loadDraft() {
   } catch (e) { return false; }
 }
 
+/* ---------- AI(Gemini) 연동 ---------- */
+
+const AI_SETTINGS_KEY = 'naver-blog-generator-ai-settings-v1';
+
+function saveAISettings() {
+  try {
+    localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify({
+      aiEnabled: state.aiEnabled, apiKey: state.apiKey, aiModel: state.aiModel,
+    }));
+  } catch (e) { /* 용량 초과 등은 무시 */ }
+}
+
+function loadAISettings() {
+  try {
+    const raw = localStorage.getItem(AI_SETTINGS_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (typeof saved.aiEnabled === 'boolean') state.aiEnabled = saved.aiEnabled;
+    if (typeof saved.apiKey === 'string') state.apiKey = saved.apiKey;
+    if (typeof saved.aiModel === 'string' && saved.aiModel) state.aiModel = saved.aiModel;
+  } catch (e) { /* 무시 */ }
+}
+
+function buildAIPrompt(s) {
+  const input = {
+    category: CATEGORY_LABEL[s.category],
+    place: s.place || null,
+    region: s.region || null,
+    date: s.date || null,
+    companion: s.companion || null,
+    rating: s.rating || null,
+    keywords: parseKeywords(s.keywordsRaw),
+    sections: s.sections.map((sec, i) => ({
+      index: i + 1,
+      subtitle: sec.subtitle.trim() || null,
+      notes: splitBullets(sec.notes),
+    })),
+    summaryNotes: splitBullets(s.summaryNotes),
+  };
+
+  return `당신은 네이버 블로그에 ${CATEGORY_LABEL[s.category]}를 올리는 블로거입니다. 아래 JSON 정보를 바탕으로 실제 경험을 진솔하게 전달하는 한국어 블로그 글을 작성해주세요.
+
+작성 원칙:
+- 광고성 과장 표현("무조건 강추", "인생 맛집" 남발 등)과 이모지 남발을 피하고, 담백하고 자연스러운 문체로 쓸 것
+- 입력에 없는 구체적 사실(가격, 시간, 메뉴명 등)을 지어내지 말 것
+- 지역·장소명·키워드를 억지스럽지 않게 자연스럽게 본문에 녹여 검색 노출에 도움이 되도록 할 것
+- 각 섹션은 문단 2~3개, 문단당 2~4문장 정도로 작성할 것
+- sections 배열의 순서와 개수는 입력과 동일하게 유지할 것 (섹션에 notes가 없고 사진만 있을 수도 있음, 이 경우 간단한 문단 1개만 작성)
+
+입력 정보:
+${JSON.stringify(input, null, 2)}
+
+아래 JSON 형식으로만, 다른 설명 없이 응답하세요:
+{
+  "title": "네이버 검색 노출에 최적화된 제목 (25~40자 내외)",
+  "titleAlternatives": ["대체 제목1", "대체 제목2"],
+  "intro": ["도입부 문단1", "도입부 문단2"],
+  "sections": [
+    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2"] }
+  ],
+  "summary": ["총평 문단1", "총평 문단2"],
+  "tags": ["태그1", "태그2"]
+}`;
+}
+
+async function callGemini(apiKey, model, prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.9, responseMimeType: 'application/json' },
+    }),
+  });
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).error?.message || ''; } catch (e) { /* 무시 */ }
+    throw new Error(`Gemini API 오류 (${res.status})${detail ? ': ' + detail : ''}`);
+  }
+  const data = await res.json();
+  const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
+  if (!text) throw new Error('Gemini 응답이 비어있어요.');
+  return text;
+}
+
+function parseAIJson(raw) {
+  let text = raw.trim();
+  const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) text = fence[1].trim();
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  if (start === -1 || end === -1) throw new Error('AI 응답 형식을 이해할 수 없어요.');
+  return JSON.parse(text.slice(start, end + 1));
+}
+
+async function generateWithAI() {
+  const btn = document.getElementById('generateBtn');
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '✨ AI가 다듬는 중...';
+  flashStatus('Gemini로 문장을 다듬고 있어요. 잠시만 기다려주세요...');
+  try {
+    const prompt = buildAIPrompt(state);
+    const raw = await callGemini(state.apiKey, state.aiModel || 'gemini-2.5-flash', prompt);
+    const json = parseAIJson(raw);
+    lastAIJson = json;
+    renderAIPost(json);
+    flashStatus('AI가 문장을 다듬었어요. 사실관계와 어투는 꼭 한 번 더 확인해주세요.');
+  } catch (err) {
+    lastAIJson = null;
+    renderPreview();
+    flashStatus(`AI 다듬기에 실패해 규칙 기반 초안을 표시했어요. (${err.message})`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
 /* ---------- 예시 불러오기 ---------- */
 
 const EXAMPLE = {
@@ -612,6 +803,11 @@ function syncFormFromState() {
   document.getElementById('extraTagsInput').value = state.extraTagsRaw;
   document.getElementById('summaryInput').value = state.summaryNotes;
   document.querySelectorAll('.star-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.star) <= state.rating));
+
+  document.getElementById('aiToggle').checked = state.aiEnabled;
+  document.getElementById('apiKeyInput').value = state.apiKey;
+  document.getElementById('aiModelInput').value = state.aiModel;
+  document.getElementById('aiSettingsBody').classList.toggle('open', state.aiEnabled);
 }
 
 function bindForm() {
@@ -636,11 +832,18 @@ function bindForm() {
   });
 
   document.getElementById('addSectionBtn').onclick = () => addSection();
-  document.getElementById('generateBtn').onclick = () => { state.chosenTitleIndex = 0; renderPreview(); scrollToPreview(); };
+  document.getElementById('generateBtn').onclick = () => {
+    state.chosenTitleIndex = 0;
+    if (state.aiEnabled && state.apiKey.trim()) generateWithAI();
+    else renderPreview();
+    scrollToPreview();
+  };
+  document.getElementById('templateOnlyBtn').onclick = () => { state.chosenTitleIndex = 0; renderPreview(); scrollToPreview(); };
   document.getElementById('exampleBtn').onclick = loadExample;
   document.getElementById('resetBtn').onclick = () => {
-    if (!confirm('입력한 내용을 모두 지울까요?')) return;
+    if (!confirm('입력한 내용과 저장된 API 키를 모두 지울까요?')) return;
     localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(AI_SETTINGS_KEY);
     location.reload();
   };
   document.getElementById('copyRichBtn').onclick = copyRich;
@@ -649,6 +852,24 @@ function bindForm() {
 
   document.getElementById('mobileTabForm').onclick = () => switchMobileTab('form');
   document.getElementById('mobileTabPreview').onclick = () => switchMobileTab('preview');
+
+  document.getElementById('aiToggle').onchange = (e) => {
+    state.aiEnabled = e.target.checked;
+    document.getElementById('aiSettingsBody').classList.toggle('open', state.aiEnabled);
+    saveAISettings();
+  };
+  const apiKeyInput = document.getElementById('apiKeyInput');
+  apiKeyInput.oninput = (e) => { state.apiKey = e.target.value.trim(); saveAISettings(); };
+  document.getElementById('aiModelInput').oninput = (e) => { state.aiModel = e.target.value.trim() || 'gemini-2.5-flash'; saveAISettings(); };
+  document.getElementById('toggleKeyVisible').onclick = () => {
+    apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+  };
+  document.getElementById('clearKeyBtn').onclick = () => {
+    state.apiKey = '';
+    apiKeyInput.value = '';
+    saveAISettings();
+    flashStatus('저장된 API 키를 삭제했어요.');
+  };
 }
 
 function switchMobileTab(tab) {
@@ -666,6 +887,7 @@ function scrollToPreview() {
 
 function init() {
   const hadDraft = loadDraft();
+  loadAISettings();
   if (!hadDraft) {
     addSection();
     addSection();

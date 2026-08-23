@@ -84,6 +84,34 @@
       <input type="text" id="keywordsInput" placeholder="예) 노포 감성, 숯불구이, 가성비">
     </div>
 
+    <div class="field-group ai-panel">
+      <label class="ai-toggle-row">
+        <input type="checkbox" id="aiToggle">
+        <span class="field-label">✨ AI로 문장 다듬기 (Gemini 무료 API)</span>
+      </label>
+      <div class="ai-settings-body" id="aiSettingsBody">
+        <p class="ai-help-text">
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>에서
+          무료로 API 키를 발급받아 붙여넣으면, 입력하신 메모를 자연스러운 문장으로 다듬어줍니다.
+          이 사이트는 서버가 없어 <b>키가 브라우저에만 저장</b>되고 Google API로 직접 전송되며,
+          사진은 전송되지 않고 텍스트(장소명, 메모 등)만 전송됩니다. 무료 티어는 Google이 품질 개선 목적으로
+          요청 내용을 활용할 수 있다는 점도 참고해주세요.
+        </p>
+        <div class="field-group">
+          <label class="field-label" for="apiKeyInput">Gemini API 키</label>
+          <div class="key-input-row">
+            <input type="password" id="apiKeyInput" placeholder="AIza...">
+            <button type="button" id="toggleKeyVisible" class="icon-btn" title="키 표시/숨김">👁</button>
+            <button type="button" id="clearKeyBtn" class="btn-secondary small">삭제</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="aiModelInput">모델명 (고급, 보통 변경 불필요)</label>
+          <input type="text" id="aiModelInput" placeholder="gemini-2.5-flash">
+        </div>
+      </div>
+    </div>
+
     <div class="field-group">
       <div class="field-label-row">
         <label class="field-label">소제목 & 사진</label>
@@ -105,9 +133,10 @@
     <div class="action-row">
       <button type="button" id="exampleBtn" class="btn-secondary">예시로 채워보기</button>
       <button type="button" id="resetBtn" class="btn-secondary">전체 초기화</button>
+      <button type="button" id="templateOnlyBtn" class="btn-secondary">규칙 기반 초안만 보기</button>
       <button type="button" id="generateBtn" class="btn-primary">✨ 포스팅 생성하기</button>
     </div>
-    <p class="privacy-note">사진과 입력 내용은 서버로 전송되지 않고, 이 브라우저 안에서만 처리돼요. (사진은 새로고침 시 사라지므로 완성 후 내보내기를 먼저 해주세요)</p>
+    <p class="privacy-note">사진과 입력 내용은 저희 서버로 전송되지 않고 이 브라우저 안에서만 처리돼요. (사진은 새로고침 시 사라지므로 완성 후 내보내기를 먼저 해주세요) AI 다듬기를 켜면 텍스트 메모가 Google Gemini API로 전송됩니다.</p>
 
   </section>
 

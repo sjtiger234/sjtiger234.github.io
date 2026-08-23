@@ -112,6 +112,12 @@ const SUMMARY_CLOSERS = {
   show: ['여운이 가시지 않아 다음 공연도 예매를 고민 중이다.', '주변에 꼭 추천하고 싶은 공연이다.', '다시 봐도 좋을 것 같은 무대였다.'],
 };
 
+const SIGNOFF_POOL = {
+  food: ['다음에도 맛있는 맛집 이야기로 찾아올게요 :)', '다음에도 재미있는 맛집 이야기로 찾아올게요 :)'],
+  travel: ['다음에도 즐거운 여행 이야기로 찾아올게요 :)', '다음에도 재미있는 여행 이야기로 찾아올게요 :)'],
+  show: ['다음에도 감동적인 공연 이야기로 찾아올게요 :)', '다음에도 재미있는 공연 이야기로 찾아올게요 :)'],
+};
+
 const TAG_POOL = {
   food: ['맛집', '맛집추천', '맛집투어', '먹스타그램', '맛스타그램', '로컬맛집', '데이트코스', '맛집리뷰'],
   travel: ['여행', '국내여행', '여행스타그램', '여행에미치다', '여행코스', '당일치기', '주말여행', '여행추천'],
@@ -128,6 +134,8 @@ let state = {
   summaryText: '',
   photos: [],
   summaryNotes: '',
+  nickname: '',
+  signoffText: '',
   chosenTitleIndex: 0,
   lastTitleOptions: [],
   aiEnabled: false,
@@ -229,6 +237,28 @@ function splitIntoChunks(items, n) {
     idx += size;
   }
   return chunks;
+}
+function nonEmptyArr(a) { return Array.isArray(a) && a.length > 0; }
+
+function assignPhotosToSections(photos, sections) {
+  const eligible = sections.map((sec, i) => (nonEmptyArr(sec.paragraphs) ? i : -1)).filter((i) => i >= 0);
+  const targetIdxs = eligible.length ? eligible : sections.map((_, i) => i);
+  const chunks = splitIntoChunks(photos, targetIdxs.length);
+  const result = sections.map(() => []);
+  targetIdxs.forEach((idx, k) => { result[idx] = chunks[k]; });
+  return result;
+}
+
+function buildGreetingLine(s) {
+  return s.nickname.trim() ? `안녕하세요? ${s.nickname.trim()}입니다.` : '';
+}
+function finalizeIntro(s, introParas) {
+  const greeting = buildGreetingLine(s);
+  return greeting ? [greeting, ...introParas] : introParas;
+}
+function finalizeSummary(s, summarySentences) {
+  const signoff = s.signoffText.trim() || pick(SIGNOFF_POOL[s.category]);
+  return [...summarySentences, signoff, `이것은 ${CATEGORY_LABEL[s.category]}입니다.`];
 }
 
 /* ---------- 제목 / 태그 생성 ---------- */
@@ -349,7 +379,7 @@ function generatePost(s) {
     .replace('{place}', place)
     .replace('{region}', region || '요즘 핫한 동네')
     .replace('{keyword}', keyword);
-  const introParas = [opener.replace(/\s+/g, ' ').trim(), pick(INTRO_CLOSERS[category])];
+  const introParas = finalizeIntro(s, [opener.replace(/\s+/g, ' ').trim(), pick(INTRO_CLOSERS[category])]);
 
   const titleOptions = buildTitleOptions(s);
   state.lastTitleOptions = titleOptions;
@@ -358,9 +388,10 @@ function generatePost(s) {
   const builtSections = buildTemplateSections(s);
 
   const summaryBullets = splitBullets(s.summaryNotes);
-  const summarySentences = summaryBullets.map((b, i) => (i === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
+  let summarySentences = summaryBullets.map((b, i) => (i === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
   if (s.rating > 0) summarySentences.unshift(RATING_TEXT[s.rating]);
   summarySentences.push(pick(SUMMARY_CLOSERS[category]));
+  summarySentences = finalizeSummary(s, summarySentences);
 
   const tags = buildTags(s);
 
@@ -378,21 +409,31 @@ function composeFromAI(s, ai, sourceLabel = 'ai') {
   state.lastTitleOptions = titleOptions;
   const title = titleOptions[Math.min(s.chosenTitleIndex, titleOptions.length - 1)];
 
-  const introParas = Array.isArray(ai.intro) && ai.intro.length
+  const introParas = finalizeIntro(s, Array.isArray(ai.intro) && ai.intro.length
     ? ai.intro.filter(Boolean)
-    : [pick(INTRO_OPENERS[category]).replace(/\{[a-z]+\}/g, '').replace(/\s+/g, ' ').trim(), pick(INTRO_CLOSERS[category])];
+    : [pick(INTRO_OPENERS[category]).replace(/\{[a-z]+\}/g, '').replace(/\s+/g, ' ').trim(), pick(INTRO_CLOSERS[category])]);
 
   const aiSectionsRaw = Array.isArray(ai.sections)
-    ? ai.sections.filter((sec) => sec && Array.isArray(sec.paragraphs) && sec.paragraphs.some(Boolean))
+    ? ai.sections.filter((sec) => sec && (nonEmptyArr(sec.facts) || nonEmptyArr(sec.list) || nonEmptyArr(sec.paragraphs)))
     : [];
 
   let builtSections;
   if (aiSectionsRaw.length > 0) {
-    const photoChunks = splitIntoChunks(s.photos, aiSectionsRaw.length);
+    const photoChunks = assignPhotosToSections(s.photos, aiSectionsRaw);
     builtSections = aiSectionsRaw.map((aiSec, i) => {
       const subtitle = (aiSec.subtitle && aiSec.subtitle.trim()) || defaultSubtitle(category, i);
-      const paragraphs = aiSec.paragraphs.filter(Boolean);
-      return { subtitle, blocks: distributeIntoBlocks(paragraphs, photoChunks[i] || []) };
+      const blocks = [];
+      if (nonEmptyArr(aiSec.facts)) {
+        const facts = aiSec.facts.filter((f) => f && f.label && f.value);
+        if (facts.length) blocks.push({ type: 'infobox', facts });
+      }
+      if (nonEmptyArr(aiSec.list)) {
+        const items = aiSec.list.filter(Boolean);
+        if (items.length) blocks.push({ type: 'list', items });
+      }
+      const paragraphs = nonEmptyArr(aiSec.paragraphs) ? aiSec.paragraphs.filter(Boolean) : [];
+      blocks.push(...distributeIntoBlocks(paragraphs, photoChunks[i] || []));
+      return { subtitle, blocks };
     }).filter((sec) => sec.blocks.length > 0);
   } else {
     builtSections = buildTemplateSections(s);
@@ -407,6 +448,7 @@ function composeFromAI(s, ai, sourceLabel = 'ai') {
     if (s.rating > 0) summarySentences.unshift(RATING_TEXT[s.rating]);
     summarySentences.push(pick(SUMMARY_CLOSERS[category]));
   }
+  summarySentences = finalizeSummary(s, summarySentences);
 
   const templateTags = buildTags(s);
   const aiTags = Array.isArray(ai.tags) ? ai.tags.map((t) => String(t).replace(/^#/, '').replace(/\s+/g, '')).filter(Boolean) : [];
@@ -432,6 +474,24 @@ function renderAIPost(ai, sourceLabel = 'ai') {
   renderPostToDom(post);
 }
 
+function renderBlockHtml(b, sectionSubtitle) {
+  if (b.type === 'text') return `<p>${escapeHtml(b.text)}</p>`;
+  if (b.type === 'infobox') {
+    return `<dl class="info-box">${b.facts.map((f) => `<div class="info-row"><dt>${escapeHtml(f.label)}</dt><dd>${escapeHtml(f.value)}</dd></div>`).join('')}</dl>`;
+  }
+  if (b.type === 'list') {
+    return `<ul class="content-list">${b.items.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`;
+  }
+  return `<figure><img src="${b.photo.dataUrl}" alt="${escapeAttr(b.photo.caption || sectionSubtitle)}">${b.photo.caption ? `<figcaption>${escapeHtml(b.photo.caption)}</figcaption>` : ''}</figure>`;
+}
+
+function blockTextLength(b) {
+  if (b.type === 'text') return b.text.length;
+  if (b.type === 'infobox') return b.facts.reduce((sum, f) => sum + f.label.length + f.value.length, 0);
+  if (b.type === 'list') return b.items.reduce((sum, t) => sum + t.length, 0);
+  return 0;
+}
+
 function renderPostToDom(post) {
   lastPost = post;
   const el = document.getElementById('previewArticle');
@@ -449,10 +509,7 @@ function renderPostToDom(post) {
   const sectionsHtml = post.sections.map((sec, i) => `
     <section class="post-section">
       <h2>${i + 1}. ${escapeHtml(sec.subtitle)}</h2>
-      ${sec.blocks.map((b) => b.type === 'text'
-        ? `<p>${escapeHtml(b.text)}</p>`
-        : `<figure><img src="${b.photo.dataUrl}" alt="${escapeAttr(b.photo.caption || sec.subtitle)}">${b.photo.caption ? `<figcaption>${escapeHtml(b.photo.caption)}</figcaption>` : ''}</figure>`
-      ).join('')}
+      ${sec.blocks.map((b) => renderBlockHtml(b, sec.subtitle)).join('')}
     </section>
   `).join('');
 
@@ -475,7 +532,7 @@ function renderPostToDom(post) {
   const sourceBadge = sourceBadgeMap[post.source] || sourceBadgeMap.template;
 
   const charCount = post.introParas.join('').length
-    + post.sections.reduce((sum, sec) => sum + sec.blocks.filter((b) => b.type === 'text').reduce((s2, b) => s2 + b.text.length, 0), 0)
+    + post.sections.reduce((sum, sec) => sum + sec.blocks.reduce((s2, b) => s2 + blockTextLength(b), 0), 0)
     + post.summarySentences.join('').length;
 
   el.innerHTML = `
@@ -514,6 +571,8 @@ function buildPlainText(post) {
     lines.push(`${i + 1}. ${sec.subtitle}`, '');
     sec.blocks.forEach((b) => {
       if (b.type === 'text') lines.push(b.text);
+      else if (b.type === 'infobox') b.facts.forEach((f) => lines.push(`${f.label}: ${f.value}`));
+      else if (b.type === 'list') b.items.forEach((t) => lines.push(`- ${t}`));
       else { photoCounter++; lines.push(`[사진 ${photoCounter}${b.photo.caption ? ' - ' + b.photo.caption : ''}]`); }
     });
     lines.push('');
@@ -530,10 +589,12 @@ function buildHtmlFragment(post) {
   const introHtml = post.introParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('');
   const sectionsHtml = post.sections.map((sec, i) => `
     <h2>${i + 1}. ${escapeHtml(sec.subtitle)}</h2>
-    ${sec.blocks.map((b) => b.type === 'text'
-      ? `<p>${escapeHtml(b.text)}</p>`
-      : `<p><img src="${b.photo.dataUrl}" alt="${escapeAttr(b.photo.caption || sec.subtitle)}" style="max-width:100%;">${b.photo.caption ? `<br><i>${escapeHtml(b.photo.caption)}</i>` : ''}</p>`
-    ).join('')}
+    ${sec.blocks.map((b) => {
+      if (b.type === 'text') return `<p>${escapeHtml(b.text)}</p>`;
+      if (b.type === 'infobox') return `<p>${b.facts.map((f) => `<b>${escapeHtml(f.label)}</b>: ${escapeHtml(f.value)}`).join('<br>')}</p>`;
+      if (b.type === 'list') return `<p>${b.items.map((t) => `• ${escapeHtml(t)}`).join('<br>')}</p>`;
+      return `<p><img src="${b.photo.dataUrl}" alt="${escapeAttr(b.photo.caption || sec.subtitle)}" style="max-width:100%;">${b.photo.caption ? `<br><i>${escapeHtml(b.photo.caption)}</i>` : ''}</p>`;
+    }).join('')}
   `).join('');
   const stars = post.rating ? `<p>${'★'.repeat(post.rating)}${'☆'.repeat(5 - post.rating)}</p>` : '';
   const summaryHtml = `<h2>${post.sections.length + 1}. 총평</h2>${stars}${post.summarySentences.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}`;
@@ -607,6 +668,7 @@ function saveDraft() {
     category: state.category, place: state.place, region: state.region, date: state.date,
     companion: state.companion, rating: state.rating, keywordsRaw: state.keywordsRaw,
     extraTagsRaw: state.extraTagsRaw, summaryText: state.summaryText, summaryNotes: state.summaryNotes,
+    nickname: state.nickname, signoffText: state.signoffText,
   };
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) { /* 용량 초과 등은 무시 */ }
 }
@@ -661,18 +723,21 @@ function summarizeInput(s) {
 
 const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인생 맛집" 남발 등)과 이모지 남발을 피하고, 담백하고 자연스러운 문체로 쓸 것
 - 지역·장소명·키워드를 억지스럽지 않게 자연스럽게 본문에 녹여 검색 노출에 도움이 되도록 할 것
-- 전체 글(도입부+본문+총평 합산, 제목·태그 제외) 분량은 공백 포함 1000~1200자 내외로 작성할 것
-- 소제목은 overallNotes 내용에 맞게 2~4개 정도로 자연스럽게 나눌 것 (내용이 적으면 1~2개도 괜찮음)
-- 섹션당 문단은 1~2개, 문단당 2~3문장 정도로 간결하게 쓰되, 취재된 실제 정보(주소·영업시간·가격대·시그니처·특징 등)를 압축적으로 담아 밀도 있게 쓸 것
+- 전체 분량에는 엄격한 글자수 제한을 두지 않는다. 취재 노트와 overallNotes가 풍부하면 소제목을 6~9개까지 늘려 실제 파워블로거의 후기처럼 충실하고 상세하게 쓰고, 정보가 적으면 2~4개 정도로 간결하게 쓸 것
+- 첫 소제목은 가능하면 "기본 정보"에 해당하는 섹션으로 구성해서, 그 섹션의 facts 필드에 확인된 사실(주소, 전화번호, 영업시간/공연일시, 가격, 정기휴무 등)을 key-value로 정리할 것. 확인된 사실이 없으면 이 섹션은 생략할 것
+- 가능하면 장소·인물·단체의 배경(이력, 유명해진 계기, 역사 등)을 다루는 소제목을 하나 포함할 것 (취재 노트에 근거가 있을 때만. 근거 없이 지어내지 말 것)
+- 코스 옵션, 프로그램/세트리스트, 방문 팁처럼 목록으로 정리하는 게 자연스러운 내용은 해당 섹션의 list 필드에 배열로 담을 것
+- 섹션당 문단(paragraphs)은 2~4개, 문단당 2~4문장 정도로, 취재된 실제 정보(주소·영업시간·가격대·메뉴명·특징 등)를 구체적으로 담아 밀도 있게 쓸 것
 - photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것`;
 
 function buildResearchPrompt(s) {
   const input = summarizeInput(s);
   return `당신은 네이버 블로그에 올릴 ${CATEGORY_LABEL[s.category]}를 위해 취재하는 리서처입니다. 구글 검색으로 아래 장소/공연에 대한 실제 정보를 최대한 찾아서 정리해주세요.
 
-찾아야 할 정보 (해당되는 것만):
-- 정확한 위치/주소, 가는 법, 영업시간(또는 공연 일정)
-- 대표 메뉴/시그니처, 가격대, 웨이팅 여부 (맛집) / 코스, 입장료, 추천 동선, 주변 명소 (여행) / 러닝타임, 캐스팅, 공연장 정보, 관람 포인트 (공연)
+찾아야 할 정보 (해당되는 것만, "기본 정보" 박스에 쓸 수 있도록 최대한 정확한 값으로):
+- 정확한 위치/주소, 전화번호, 가는 법, 영업시간·정기휴무(또는 공연 일시), 가격대·티켓 가격
+- 대표 메뉴/시그니처, 웨이팅 여부 (맛집) / 코스, 입장료, 추천 동선, 주변 명소 (여행) / 러닝타임, 캐스팅, 공연장 정보, 관람 포인트 (공연)
+- 관련 인물·단체의 배경 (셰프/연주자/극단 등의 이력, 유명해진 계기, 수상 경력, 방송 출연 등)
 - 최근 방문객·관람객들의 공통적인 평가나 특징
 - 사용자가 직접 남긴 아래 메모(실제 경험, overallNotes)
 
@@ -704,11 +769,14 @@ ${JSON.stringify(input, null, 2)}
   "titleAlternatives": ["대체 제목1", "대체 제목2"],
   "intro": ["도입부 문단1"],
   "sections": [
-    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2"] }
+    { "subtitle": "기본 정보", "facts": [{"label": "주소", "value": "..."}, {"label": "영업시간", "value": "..."}] },
+    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2", "문단3"] },
+    { "subtitle": "소제목", "list": ["항목1", "항목2"], "paragraphs": ["문단1"] }
   ],
-  "summary": ["총평 문단1"],
+  "summary": ["총평 문단1", "총평 문단2"],
   "tags": ["태그1", "태그2"]
-}`;
+}
+(facts/list는 해당 내용이 있을 때만 넣고, 없으면 필드 자체를 생략하세요)`;
 }
 
 function buildFallbackJsonPrompt(s) {
@@ -728,18 +796,21 @@ ${JSON.stringify(input, null, 2)}
   "titleAlternatives": ["대체 제목1", "대체 제목2"],
   "intro": ["도입부 문단1"],
   "sections": [
-    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2"] }
+    { "subtitle": "기본 정보", "facts": [{"label": "주소", "value": "..."}, {"label": "영업시간", "value": "..."}] },
+    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2", "문단3"] },
+    { "subtitle": "소제목", "list": ["항목1", "항목2"], "paragraphs": ["문단1"] }
   ],
-  "summary": ["총평 문단1"],
+  "summary": ["총평 문단1", "총평 문단2"],
   "tags": ["태그1", "태그2"]
-}`;
+}
+(facts/list는 해당 내용이 있을 때만 넣고, 없으면 필드 자체를 생략하세요)`;
 }
 
 async function callGeminiApi(apiKey, model, prompt, { useSearch = false, jsonMode = false } = {}) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const body = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.9 },
+    generationConfig: { temperature: 0.9, maxOutputTokens: 8192 },
   };
   if (jsonMode) body.generationConfig.responseMimeType = 'application/json';
   if (useSearch) body.tools = [{ google_search: {} }];
@@ -840,6 +911,8 @@ function syncFormFromState() {
   document.getElementById('extraTagsInput').value = state.extraTagsRaw;
   document.getElementById('summaryTextInput').value = state.summaryText;
   document.getElementById('summaryInput').value = state.summaryNotes;
+  document.getElementById('nicknameInput').value = state.nickname;
+  document.getElementById('signoffInput').value = state.signoffText;
   document.querySelectorAll('.star-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.star) <= state.rating));
 
   document.getElementById('aiToggle').checked = state.aiEnabled;
@@ -862,6 +935,8 @@ function bindForm() {
   document.getElementById('extraTagsInput').oninput = (e) => { state.extraTagsRaw = e.target.value; saveDraft(); };
   document.getElementById('summaryTextInput').oninput = (e) => { state.summaryText = e.target.value; saveDraft(); };
   document.getElementById('summaryInput').oninput = (e) => { state.summaryNotes = e.target.value; saveDraft(); };
+  document.getElementById('nicknameInput').oninput = (e) => { state.nickname = e.target.value; saveDraft(); };
+  document.getElementById('signoffInput').oninput = (e) => { state.signoffText = e.target.value; saveDraft(); };
 
   document.getElementById('photoAddInput').onchange = (e) => { addPhotos(e.target.files); e.target.value = ''; };
 

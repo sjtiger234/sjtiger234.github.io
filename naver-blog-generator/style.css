@@ -250,6 +250,22 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent-border);
 
 .stars { color: #E0A93C; font-size: 1.1rem; margin-bottom: 8px; }
 
+.info-box {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.info-row { display: flex; gap: 8px; font-size: .88rem; }
+.info-row dt { flex: 0 0 auto; font-weight: 700; color: var(--accent); min-width: 64px; }
+.info-row dd { color: var(--text-1); }
+
+.content-list { margin: 0 0 10px 0; padding-left: 20px; font-size: .92rem; color: var(--text-1); }
+.content-list li { margin-bottom: 4px; }
+
 .tags-line { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 6px; }
 .tag-chip { font-size: .82rem; color: var(--accent); background: var(--accent-dim); padding: 4px 10px; border-radius: 14px; }
 

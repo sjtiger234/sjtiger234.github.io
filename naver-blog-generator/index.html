@@ -101,7 +101,18 @@
     <div class="field-group">
       <label class="field-label" for="summaryTextInput">전체 내용 요약 (한 줄씩, 편하게 적어주세요)</label>
       <textarea id="summaryTextInput" rows="6" placeholder="예) 평일 저녁 7시 웨이팅 10분&#10;허름한 골목 안 노포 느낌, 테이블 4개뿐&#10;대패삼겹살과 목살 세트 주문, 연탄 화로 직접 구워먹는 방식&#10;고기 질 좋고 불맛 확실함&#10;2인 기준 4만원대"></textarea>
-      <p class="field-hint">소제목 구성과 사진 배치는 자동으로 처리됩니다. AI 모드에서는 이 내용을 바탕으로 구글 검색까지 반영해 약 1000~1200자 분량으로 정리해드려요.</p>
+      <p class="field-hint">소제목 구성과 사진 배치는 자동으로 처리됩니다. AI 모드는 구글 검색으로 기본 정보(주소·영업시간·가격 등)와 배경 정보까지 찾아 반영하며, 분량 제한 없이 내용에 맞게 상세히 작성합니다.</p>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label" for="nicknameInput">블로그 닉네임 (선택)</label>
+        <input type="text" id="nicknameInput" placeholder="예) 멋진 나그네">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="signoffInput">마무리 인사말 (선택)</label>
+        <input type="text" id="signoffInput" placeholder="예) 다음에도 재미있는 이야기로 찾아올게요 :)">
+      </div>
     </div>
 
     <div class="field-group ai-panel">
@@ -112,8 +123,9 @@
       <div class="ai-settings-body" id="aiSettingsBody">
         <p class="ai-help-text">
           <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>에서
-          무료로 API 키를 발급받아 붙여넣으면, 먼저 <b>구글 검색으로 장소·공연에 대한 실제 정보를 찾은 뒤</b>
-          입력하신 메모와 합쳐 상세한 글로 정리해줍니다(검색 연동 실패 시 메모만으로 다듬는 방식으로 자동 전환).
+          무료로 API 키를 발급받아 붙여넣으면, 먼저 <b>구글 검색으로 장소·공연·인물에 대한 실제 정보를 취재하듯 찾은 뒤</b>
+          입력하신 메모와 합쳐 기본 정보 박스, 배경 소개, 상세 후기까지 갖춘 글로 정리해줍니다(검색 연동 실패 시
+          메모만으로 다듬는 방식으로 자동 전환). 분량은 제한 없이 내용에 맞게 상세하게 작성됩니다.
           검색 연동은 하루 약 1,500건까지 무료이고, 개인 블로그 포스팅 용도로는 무료 한도를 넘길 일이 거의 없어요.
           이 사이트는 서버가 없어 <b>키가 브라우저에만 저장</b>되고 Google API로 직접 전송되며, 사진은 전송되지
           않고 텍스트(장소명, 메모 등)만 전송됩니다. 무료 티어는 Google이 품질 개선 목적으로 요청 내용을 활용할

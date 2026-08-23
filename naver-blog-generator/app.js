@@ -125,7 +125,8 @@ let state = {
   place: '', region: '', date: '', companion: '', rating: 0,
   keywordsRaw: '',
   extraTagsRaw: '',
-  sections: [],
+  summaryText: '',
+  photos: [],
   summaryNotes: '',
   chosenTitleIndex: 0,
   lastTitleOptions: [],
@@ -136,125 +137,62 @@ let state = {
 
 let lastAIJson = null;
 
-let sectionSeq = 0;
-let photoSeq = 0;
-
 function uid(prefix) { return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`; }
 
-/* ---------- 초기 섹션 ---------- */
+/* ---------- 사진 처리 (전체 공용 사진 풀) ---------- */
 
-function addSection(subtitle = '', notes = '') {
-  state.sections.push({ id: uid('sec'), subtitle, notes, photos: [] });
-  renderSections();
-  saveDraft();
-}
-
-function removeSection(id) {
-  state.sections = state.sections.filter((s) => s.id !== id);
-  renderSections();
-  saveDraft();
-}
-
-function moveSection(id, dir) {
-  const idx = state.sections.findIndex((s) => s.id === id);
-  const target = idx + dir;
-  if (target < 0 || target >= state.sections.length) return;
-  const [item] = state.sections.splice(idx, 1);
-  state.sections.splice(target, 0, item);
-  renderSections();
-}
-
-/* ---------- 사진 처리 ---------- */
-
-function addPhotosToSection(sectionId, fileList) {
-  const section = state.sections.find((s) => s.id === sectionId);
-  if (!section) return;
+function addPhotos(fileList) {
   const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
   files.forEach((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      section.photos.push({ id: uid('photo'), name: file.name, dataUrl: e.target.result, caption: '' });
-      renderSections();
+      state.photos.push({ id: uid('photo'), name: file.name, dataUrl: e.target.result, caption: '' });
+      renderPhotos();
     };
     reader.readAsDataURL(file);
   });
 }
 
-function removePhoto(sectionId, photoId) {
-  const section = state.sections.find((s) => s.id === sectionId);
-  if (!section) return;
-  section.photos = section.photos.filter((p) => p.id !== photoId);
-  renderSections();
+function removePhoto(photoId) {
+  state.photos = state.photos.filter((p) => p.id !== photoId);
+  renderPhotos();
 }
 
-function movePhoto(sectionId, photoId, dir) {
-  const section = state.sections.find((s) => s.id === sectionId);
-  if (!section) return;
-  const idx = section.photos.findIndex((p) => p.id === photoId);
+function movePhoto(photoId, dir) {
+  const idx = state.photos.findIndex((p) => p.id === photoId);
   const target = idx + dir;
-  if (target < 0 || target >= section.photos.length) return;
-  const [item] = section.photos.splice(idx, 1);
-  section.photos.splice(target, 0, item);
-  renderSections();
+  if (target < 0 || target >= state.photos.length) return;
+  const [item] = state.photos.splice(idx, 1);
+  state.photos.splice(target, 0, item);
+  renderPhotos();
 }
 
-/* ---------- 렌더: 입력 폼 ---------- */
+/* ---------- 렌더: 사진 목록 ---------- */
 
-function renderSections() {
-  const wrap = document.getElementById('sectionsList');
+function renderPhotos() {
+  const wrap = document.getElementById('photoThumbs');
   wrap.innerHTML = '';
-  state.sections.forEach((sec, i) => {
-    const el = document.createElement('div');
-    el.className = 'section-card';
-    el.innerHTML = `
-      <div class="section-card-head">
-        <span class="section-num">소제목 ${i + 1}</span>
-        <div class="section-card-actions">
-          <button type="button" class="icon-btn" data-act="up" title="위로">▲</button>
-          <button type="button" class="icon-btn" data-act="down" title="아래로">▼</button>
-          <button type="button" class="icon-btn danger" data-act="del" title="삭제">✕</button>
-        </div>
-      </div>
-      <input type="text" class="subtitle-input" placeholder="소제목 (비워두면 자동 생성)" value="${escapeAttr(sec.subtitle)}">
-      <textarea class="notes-input" rows="3" placeholder="핵심 내용을 한 줄씩 적어주세요. 예) 웨이팅 15분, 시그니처는 트러플크림파스타, 가격은 1인 2만원대">${escapeHtml(sec.notes)}</textarea>
-      <div class="photo-zone">
-        <label class="photo-add-btn">
-          📷 사진 추가
-          <input type="file" accept="image/*" multiple hidden>
-        </label>
-        <div class="photo-thumbs"></div>
+  state.photos.forEach((p, pi) => {
+    const t = document.createElement('div');
+    t.className = 'photo-thumb';
+    t.innerHTML = `
+      <img src="${p.dataUrl}" alt="${escapeAttr(p.name)}">
+      <input type="text" class="caption-input" placeholder="캡션(선택)" value="${escapeAttr(p.caption)}">
+      <div class="photo-thumb-actions">
+        <button type="button" data-act="up">◀</button>
+        <span>${pi + 1}</span>
+        <button type="button" data-act="down">▶</button>
+        <button type="button" data-act="del" class="danger">✕</button>
       </div>
     `;
-    el.querySelector('[data-act="up"]').onclick = () => moveSection(sec.id, -1);
-    el.querySelector('[data-act="down"]').onclick = () => moveSection(sec.id, 1);
-    el.querySelector('[data-act="del"]').onclick = () => removeSection(sec.id);
-    el.querySelector('.subtitle-input').oninput = (e) => { sec.subtitle = e.target.value; saveDraft(); };
-    el.querySelector('.notes-input').oninput = (e) => { sec.notes = e.target.value; saveDraft(); };
-    el.querySelector('input[type="file"]').onchange = (e) => { addPhotosToSection(sec.id, e.target.files); e.target.value = ''; };
-
-    const thumbWrap = el.querySelector('.photo-thumbs');
-    sec.photos.forEach((p, pi) => {
-      const t = document.createElement('div');
-      t.className = 'photo-thumb';
-      t.innerHTML = `
-        <img src="${p.dataUrl}" alt="${escapeAttr(p.name)}">
-        <input type="text" class="caption-input" placeholder="캡션(선택)" value="${escapeAttr(p.caption)}">
-        <div class="photo-thumb-actions">
-          <button type="button" data-act="up">◀</button>
-          <span>${pi + 1}</span>
-          <button type="button" data-act="down">▶</button>
-          <button type="button" data-act="del" class="danger">✕</button>
-        </div>
-      `;
-      t.querySelector('.caption-input').oninput = (e) => { p.caption = e.target.value; };
-      t.querySelector('[data-act="up"]').onclick = () => movePhoto(sec.id, p.id, -1);
-      t.querySelector('[data-act="down"]').onclick = () => movePhoto(sec.id, p.id, 1);
-      t.querySelector('[data-act="del"]').onclick = () => removePhoto(sec.id, p.id);
-      thumbWrap.appendChild(t);
-    });
-
-    wrap.appendChild(el);
+    t.querySelector('.caption-input').oninput = (e) => { p.caption = e.target.value; };
+    t.querySelector('[data-act="up"]').onclick = () => movePhoto(p.id, -1);
+    t.querySelector('[data-act="down"]').onclick = () => movePhoto(p.id, 1);
+    t.querySelector('[data-act="del"]').onclick = () => removePhoto(p.id);
+    wrap.appendChild(t);
   });
+  const countEl = document.getElementById('photoCount');
+  if (countEl) countEl.textContent = state.photos.length ? `${state.photos.length}장 첨부됨` : '';
 }
 
 /* ---------- 유틸 ---------- */
@@ -276,6 +214,21 @@ function ensureSentence(fragment, category) {
   }
   const wrapper = pick(WRAPPERS[category]);
   return wrapper(fragment);
+}
+function splitIntoChunks(items, n) {
+  if (n <= 0) return [];
+  if (items.length === 0) return Array.from({ length: n }, () => []);
+  const chunks = [];
+  const base = Math.floor(items.length / n);
+  let extra = items.length % n;
+  let idx = 0;
+  for (let i = 0; i < n; i++) {
+    const size = base + (extra > 0 ? 1 : 0);
+    if (extra > 0) extra--;
+    chunks.push(items.slice(idx, idx + size));
+    idx += size;
+  }
+  return chunks;
 }
 
 /* ---------- 제목 / 태그 생성 ---------- */
@@ -364,6 +317,23 @@ function distributeIntoBlocks(items, photos) {
   return blocks;
 }
 
+function buildTemplateSections(s) {
+  const category = s.category;
+  const bullets = splitBullets(s.summaryText);
+  const sectionCount = bullets.length === 0
+    ? (s.photos.length > 0 ? 1 : 0)
+    : Math.min(DEFAULT_SUBTITLES[category].length, Math.max(1, Math.ceil(bullets.length / 3)));
+  if (sectionCount === 0) return [];
+  const bulletChunks = splitIntoChunks(bullets, sectionCount);
+  const photoChunks = splitIntoChunks(s.photos, sectionCount);
+  return bulletChunks.map((chunk, i) => {
+    const subtitle = defaultSubtitle(category, i);
+    const sentences = chunk.map((b, bi) => (bi === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
+    if (sentences.length > 0) sentences.push(pick(SECTION_CLOSERS[category]));
+    return { subtitle, blocks: distributeIntoBlocks(sentences, photoChunks[i] || []) };
+  }).filter((sec) => sec.blocks.length > 0);
+}
+
 function generatePost(s) {
   const category = s.category;
   const place = s.place || '이곳';
@@ -385,14 +355,7 @@ function generatePost(s) {
   state.lastTitleOptions = titleOptions;
   const title = titleOptions[Math.min(s.chosenTitleIndex, titleOptions.length - 1)];
 
-  const builtSections = s.sections.map((sec, i) => {
-    const subtitle = sec.subtitle.trim() || defaultSubtitle(category, i);
-    const bullets = splitBullets(sec.notes);
-    const sentences = bullets.map((b, bi) => (bi === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
-    if (sentences.length === 0 && sec.photos.length === 0) return null;
-    if (sentences.length > 0) sentences.push(pick(SECTION_CLOSERS[category]));
-    return { subtitle, blocks: distributeIntoBlocks(sentences, sec.photos) };
-  }).filter(Boolean);
+  const builtSections = buildTemplateSections(s);
 
   const summaryBullets = splitBullets(s.summaryNotes);
   const summarySentences = summaryBullets.map((b, i) => (i === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
@@ -406,7 +369,7 @@ function generatePost(s) {
 
 /* ---------- AI(Gemini) 결과를 같은 구조로 합성 ---------- */
 
-function composeFromAI(s, ai) {
+function composeFromAI(s, ai, sourceLabel = 'ai') {
   const category = s.category;
 
   const templateTitles = buildTitleOptions(s);
@@ -419,20 +382,21 @@ function composeFromAI(s, ai) {
     ? ai.intro.filter(Boolean)
     : [pick(INTRO_OPENERS[category]).replace(/\{[a-z]+\}/g, '').replace(/\s+/g, ' ').trim(), pick(INTRO_CLOSERS[category])];
 
-  const aiSections = Array.isArray(ai.sections) ? ai.sections : [];
-  const builtSections = s.sections.map((sec, i) => {
-    const fallbackSubtitle = sec.subtitle.trim() || defaultSubtitle(category, i);
-    const aiSec = aiSections[i];
-    const subtitle = (aiSec && aiSec.subtitle) || fallbackSubtitle;
-    let paragraphs = aiSec && Array.isArray(aiSec.paragraphs) ? aiSec.paragraphs.filter(Boolean) : [];
-    if (paragraphs.length === 0) {
-      const bullets = splitBullets(sec.notes);
-      paragraphs = bullets.map((b, bi) => (bi === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
-      if (paragraphs.length) paragraphs.push(pick(SECTION_CLOSERS[category]));
-    }
-    if (paragraphs.length === 0 && sec.photos.length === 0) return null;
-    return { subtitle, blocks: distributeIntoBlocks(paragraphs, sec.photos) };
-  }).filter(Boolean);
+  const aiSectionsRaw = Array.isArray(ai.sections)
+    ? ai.sections.filter((sec) => sec && Array.isArray(sec.paragraphs) && sec.paragraphs.some(Boolean))
+    : [];
+
+  let builtSections;
+  if (aiSectionsRaw.length > 0) {
+    const photoChunks = splitIntoChunks(s.photos, aiSectionsRaw.length);
+    builtSections = aiSectionsRaw.map((aiSec, i) => {
+      const subtitle = (aiSec.subtitle && aiSec.subtitle.trim()) || defaultSubtitle(category, i);
+      const paragraphs = aiSec.paragraphs.filter(Boolean);
+      return { subtitle, blocks: distributeIntoBlocks(paragraphs, photoChunks[i] || []) };
+    }).filter((sec) => sec.blocks.length > 0);
+  } else {
+    builtSections = buildTemplateSections(s);
+  }
 
   let summarySentences;
   if (Array.isArray(ai.summary) && ai.summary.length) {
@@ -448,12 +412,13 @@ function composeFromAI(s, ai) {
   const aiTags = Array.isArray(ai.tags) ? ai.tags.map((t) => String(t).replace(/^#/, '').replace(/\s+/g, '')).filter(Boolean) : [];
   const tags = Array.from(new Set([...aiTags, ...templateTags])).slice(0, 20);
 
-  return { title, titleOptions, introParas, toc: builtSections.map((b) => b.subtitle), sections: builtSections, summarySentences, tags, rating: s.rating, source: 'ai' };
+  return { title, titleOptions, introParas, toc: builtSections.map((b) => b.subtitle), sections: builtSections, summarySentences, tags, rating: s.rating, source: sourceLabel };
 }
 
 /* ---------- 렌더: 미리보기 ---------- */
 
 let lastPost = null;
+let lastAISource = 'ai';
 
 function renderPreview() {
   lastAIJson = null;
@@ -461,8 +426,9 @@ function renderPreview() {
   renderPostToDom(post);
 }
 
-function renderAIPost(ai) {
-  const post = composeFromAI(state, ai);
+function renderAIPost(ai, sourceLabel = 'ai') {
+  lastAISource = sourceLabel;
+  const post = composeFromAI(state, ai, sourceLabel);
   renderPostToDom(post);
 }
 
@@ -501,14 +467,21 @@ function renderPostToDom(post) {
 
   const tagsHtml = `<div class="tags-line">${post.tags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join(' ')}</div>`;
 
-  const sourceBadge = post.source === 'ai'
-    ? '<span class="source-badge ai">✨ AI 다듬기 적용</span>'
-    : '<span class="source-badge">규칙 기반 초안</span>';
+  const sourceBadgeMap = {
+    'ai-researched': '<span class="source-badge ai">🔎 AI 검색·리서치 기반 작성</span>',
+    'ai': '<span class="source-badge ai">✨ AI 다듬기 적용 (검색 없음)</span>',
+    'template': '<span class="source-badge">규칙 기반 초안</span>',
+  };
+  const sourceBadge = sourceBadgeMap[post.source] || sourceBadgeMap.template;
+
+  const charCount = post.introParas.join('').length
+    + post.sections.reduce((sum, sec) => sum + sec.blocks.filter((b) => b.type === 'text').reduce((s2, b) => s2 + b.text.length, 0), 0)
+    + post.summarySentences.join('').length;
 
   el.innerHTML = `
     <div class="title-choices">${titleChoices}</div>
     <h1 class="post-title">${escapeHtml(post.title)}</h1>
-    <div class="post-meta">${sourceBadge} ${escapeHtml(CATEGORY_LABEL[state.category])}${state.region ? ' · ' + escapeHtml(state.region) : ''}${state.date ? ' · ' + escapeHtml(state.date) : ''}</div>
+    <div class="post-meta">${sourceBadge} ${escapeHtml(CATEGORY_LABEL[state.category])}${state.region ? ' · ' + escapeHtml(state.region) : ''}${state.date ? ' · ' + escapeHtml(state.date) : ''} · 본문 약 ${charCount}자</div>
     ${tocHtml}
     <div class="post-intro">${post.introParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>
     ${sectionsHtml}
@@ -519,7 +492,7 @@ function renderPostToDom(post) {
   el.querySelectorAll('input[name="titleChoice"]').forEach((r) => {
     r.onchange = (e) => {
       state.chosenTitleIndex = Number(e.target.value);
-      if (lastAIJson) renderAIPost(lastAIJson); else renderPreview();
+      if (lastAIJson) renderAIPost(lastAIJson, lastAISource); else renderPreview();
     };
   });
 }
@@ -627,14 +600,13 @@ function flashStatus(msg) {
 
 /* ---------- 임시 저장 (텍스트만, 사진 제외) ---------- */
 
-const DRAFT_KEY = 'naver-blog-generator-draft-v1';
+const DRAFT_KEY = 'naver-blog-generator-draft-v2';
 
 function saveDraft() {
   const draft = {
     category: state.category, place: state.place, region: state.region, date: state.date,
     companion: state.companion, rating: state.rating, keywordsRaw: state.keywordsRaw,
-    extraTagsRaw: state.extraTagsRaw, summaryNotes: state.summaryNotes,
-    sections: state.sections.map((s) => ({ subtitle: s.subtitle, notes: s.notes })),
+    extraTagsRaw: state.extraTagsRaw, summaryText: state.summaryText, summaryNotes: state.summaryNotes,
   };
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) { /* 용량 초과 등은 무시 */ }
 }
@@ -644,8 +616,7 @@ function loadDraft() {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return false;
     const draft = JSON.parse(raw);
-    Object.assign(state, draft, { sections: [] });
-    (draft.sections || []).forEach((s) => state.sections.push({ id: uid('sec'), subtitle: s.subtitle, notes: s.notes, photos: [] }));
+    Object.assign(state, draft);
     return true;
   } catch (e) { return false; }
 }
@@ -673,8 +644,8 @@ function loadAISettings() {
   } catch (e) { /* 무시 */ }
 }
 
-function buildAIPrompt(s) {
-  const input = {
+function summarizeInput(s) {
+  return {
     category: CATEGORY_LABEL[s.category],
     place: s.place || null,
     region: s.region || null,
@@ -682,22 +653,71 @@ function buildAIPrompt(s) {
     companion: s.companion || null,
     rating: s.rating || null,
     keywords: parseKeywords(s.keywordsRaw),
-    sections: s.sections.map((sec, i) => ({
-      index: i + 1,
-      subtitle: sec.subtitle.trim() || null,
-      notes: splitBullets(sec.notes),
-    })),
-    summaryNotes: splitBullets(s.summaryNotes),
+    overallNotes: splitBullets(s.summaryText),
+    photoCount: s.photos.length,
+    finalThoughts: splitBullets(s.summaryNotes),
   };
+}
 
+const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인생 맛집" 남발 등)과 이모지 남발을 피하고, 담백하고 자연스러운 문체로 쓸 것
+- 지역·장소명·키워드를 억지스럽지 않게 자연스럽게 본문에 녹여 검색 노출에 도움이 되도록 할 것
+- 전체 글(도입부+본문+총평 합산, 제목·태그 제외) 분량은 공백 포함 1000~1200자 내외로 작성할 것
+- 소제목은 overallNotes 내용에 맞게 2~4개 정도로 자연스럽게 나눌 것 (내용이 적으면 1~2개도 괜찮음)
+- 섹션당 문단은 1~2개, 문단당 2~3문장 정도로 간결하게 쓰되, 취재된 실제 정보(주소·영업시간·가격대·시그니처·특징 등)를 압축적으로 담아 밀도 있게 쓸 것
+- photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것`;
+
+function buildResearchPrompt(s) {
+  const input = summarizeInput(s);
+  return `당신은 네이버 블로그에 올릴 ${CATEGORY_LABEL[s.category]}를 위해 취재하는 리서처입니다. 구글 검색으로 아래 장소/공연에 대한 실제 정보를 최대한 찾아서 정리해주세요.
+
+찾아야 할 정보 (해당되는 것만):
+- 정확한 위치/주소, 가는 법, 영업시간(또는 공연 일정)
+- 대표 메뉴/시그니처, 가격대, 웨이팅 여부 (맛집) / 코스, 입장료, 추천 동선, 주변 명소 (여행) / 러닝타임, 캐스팅, 공연장 정보, 관람 포인트 (공연)
+- 최근 방문객·관람객들의 공통적인 평가나 특징
+- 사용자가 직접 남긴 아래 메모(실제 경험, overallNotes)
+
+사용자 입력 정보:
+${JSON.stringify(input, null, 2)}
+
+검색으로 확인되지 않는 내용은 추측해서 지어내지 말고, 확인된 사실과 사용자 메모만으로 정리하세요. 결과는 JSON이 아닌 자유로운 한국어 텍스트로, 섹션 구분 없이 취재 노트 형태로 최대한 상세하게 작성해주세요 (이 노트 자체는 나중에 요약될 재료이니 길어도 괜찮습니다).`;
+}
+
+function buildRestructurePrompt(s, researchNotes) {
+  const input = summarizeInput(s);
+  return `당신은 네이버 블로그에 ${CATEGORY_LABEL[s.category]}를 올리는 블로거입니다. 아래 "취재 노트"와 "사용자 입력 정보"를 바탕으로 실제 경험을 진솔하고 밀도 있게 전달하는 한국어 블로그 글을 작성해주세요.
+
+작성 원칙:
+${WRITING_PRINCIPLES}
+- 취재 노트에 없는 내용은 지어내지 말 것
+
+취재 노트:
+"""
+${researchNotes}
+"""
+
+사용자 입력 정보:
+${JSON.stringify(input, null, 2)}
+
+아래 JSON 형식으로만, 다른 설명 없이 응답하세요:
+{
+  "title": "네이버 검색 노출에 최적화된 제목 (25~40자 내외)",
+  "titleAlternatives": ["대체 제목1", "대체 제목2"],
+  "intro": ["도입부 문단1"],
+  "sections": [
+    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2"] }
+  ],
+  "summary": ["총평 문단1"],
+  "tags": ["태그1", "태그2"]
+}`;
+}
+
+function buildFallbackJsonPrompt(s) {
+  const input = summarizeInput(s);
   return `당신은 네이버 블로그에 ${CATEGORY_LABEL[s.category]}를 올리는 블로거입니다. 아래 JSON 정보를 바탕으로 실제 경험을 진솔하게 전달하는 한국어 블로그 글을 작성해주세요.
 
 작성 원칙:
-- 광고성 과장 표현("무조건 강추", "인생 맛집" 남발 등)과 이모지 남발을 피하고, 담백하고 자연스러운 문체로 쓸 것
+${WRITING_PRINCIPLES}
 - 입력에 없는 구체적 사실(가격, 시간, 메뉴명 등)을 지어내지 말 것
-- 지역·장소명·키워드를 억지스럽지 않게 자연스럽게 본문에 녹여 검색 노출에 도움이 되도록 할 것
-- 각 섹션은 문단 2~3개, 문단당 2~4문장 정도로 작성할 것
-- sections 배열의 순서와 개수는 입력과 동일하게 유지할 것 (섹션에 notes가 없고 사진만 있을 수도 있음, 이 경우 간단한 문단 1개만 작성)
 
 입력 정보:
 ${JSON.stringify(input, null, 2)}
@@ -706,24 +726,28 @@ ${JSON.stringify(input, null, 2)}
 {
   "title": "네이버 검색 노출에 최적화된 제목 (25~40자 내외)",
   "titleAlternatives": ["대체 제목1", "대체 제목2"],
-  "intro": ["도입부 문단1", "도입부 문단2"],
+  "intro": ["도입부 문단1"],
   "sections": [
     { "subtitle": "소제목", "paragraphs": ["문단1", "문단2"] }
   ],
-  "summary": ["총평 문단1", "총평 문단2"],
+  "summary": ["총평 문단1"],
   "tags": ["태그1", "태그2"]
 }`;
 }
 
-async function callGemini(apiKey, model, prompt) {
+async function callGeminiApi(apiKey, model, prompt, { useSearch = false, jsonMode = false } = {}) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const body = {
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.9 },
+  };
+  if (jsonMode) body.generationConfig.responseMimeType = 'application/json';
+  if (useSearch) body.tools = [{ google_search: {} }];
+
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.9, responseMimeType: 'application/json' },
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     let detail = '';
@@ -733,7 +757,8 @@ async function callGemini(apiKey, model, prompt) {
   const data = await res.json();
   const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
   if (!text) throw new Error('Gemini 응답이 비어있어요.');
-  return text;
+  const queries = data.candidates?.[0]?.groundingMetadata?.webSearchQueries || [];
+  return { text, queries };
 }
 
 function parseAIJson(raw) {
@@ -750,19 +775,37 @@ async function generateWithAI() {
   const btn = document.getElementById('generateBtn');
   const original = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '✨ AI가 다듬는 중...';
-  flashStatus('Gemini로 문장을 다듬고 있어요. 잠시만 기다려주세요...');
+  const model = state.aiModel || 'gemini-2.5-flash';
+
   try {
-    const prompt = buildAIPrompt(state);
-    const raw = await callGemini(state.apiKey, state.aiModel || 'gemini-2.5-flash', prompt);
-    const json = parseAIJson(raw);
+    btn.textContent = '🔎 관련 정보 검색 중...';
+    flashStatus('구글 검색으로 관련 정보를 찾고 있어요. 잠시만 기다려주세요...');
+    const research = await callGeminiApi(state.apiKey, model, buildResearchPrompt(state), { useSearch: true });
+
+    btn.textContent = '✨ 글로 정리하는 중...';
+    flashStatus('찾은 정보를 바탕으로 글을 정리하고 있어요...');
+    const restructured = await callGeminiApi(state.apiKey, model, buildRestructurePrompt(state, research.text), { jsonMode: true });
+    const json = parseAIJson(restructured.text);
     lastAIJson = json;
-    renderAIPost(json);
-    flashStatus('AI가 문장을 다듬었어요. 사실관계와 어투는 꼭 한 번 더 확인해주세요.');
-  } catch (err) {
-    lastAIJson = null;
-    renderPreview();
-    flashStatus(`AI 다듬기에 실패해 규칙 기반 초안을 표시했어요. (${err.message})`);
+    renderAIPost(json, 'ai-researched');
+    const q = research.queries;
+    flashStatus(`AI가 검색 정보를 반영해 글을 작성했어요${q.length ? ` (검색어: ${q.slice(0, 3).join(', ')})` : ''}. 사실관계는 꼭 한 번 더 확인해주세요.`);
+    return;
+  } catch (searchErr) {
+    // 검색 연동 실패 시, 검색 없이 메모만으로 다듬기를 시도
+    try {
+      btn.textContent = '✨ AI가 다듬는 중...';
+      flashStatus('검색 연동에 실패해 메모 기반으로 다듬고 있어요...');
+      const fallback = await callGeminiApi(state.apiKey, model, buildFallbackJsonPrompt(state), { jsonMode: true });
+      const json = parseAIJson(fallback.text);
+      lastAIJson = json;
+      renderAIPost(json, 'ai');
+      flashStatus(`검색 없이 메모만으로 문장을 다듬었어요. (검색 실패 사유: ${searchErr.message})`);
+    } catch (fallbackErr) {
+      lastAIJson = null;
+      renderPreview();
+      flashStatus(`AI 다듬기에 실패해 규칙 기반 초안을 표시했어요. (${fallbackErr.message})`);
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = original;
@@ -774,19 +817,13 @@ async function generateWithAI() {
 const EXAMPLE = {
   category: 'food', place: '을지로 화로구이', region: '서울 을지로', date: '', companion: '친구와',
   rating: 5, keywordsRaw: '노포 감성, 숯불구이, 가성비',
-  sections: [
-    { subtitle: '', notes: '평일 저녁 7시 웨이팅 10분\n허름한 골목 안 노포 느낌 그대로\n테이블은 4개뿐이라 좁지만 정겨움' },
-    { subtitle: '', notes: '대패삼겹살과 목살 세트 주문\n연탄 화로에 직접 구워 먹는 방식\n밑반찬으로 나온 파채무침이 은근 중독적' },
-    { subtitle: '', notes: '고기 질이 좋아서 잡내 없이 고소함\n불맛이 확실히 살아있음\n마무리로 먹은 계란찜도 맛있었음' },
-  ],
+  summaryText: '평일 저녁 7시 웨이팅 10분\n허름한 골목 안 노포 느낌 그대로, 테이블은 4개뿐\n대패삼겹살과 목살 세트 주문, 연탄 화로에 직접 구워 먹는 방식\n밑반찬으로 나온 파채무침이 은근 중독적\n고기 질이 좋아서 잡내 없이 고소함, 불맛이 확실히 살아있음\n마무리로 먹은 계란찜도 맛있었음',
   summaryNotes: '2인 기준 4만원대로 가성비 훌륭\n사장님이 친절하고 셀프바가 잘 갖춰져 있음',
 };
 
 function loadExample() {
-  Object.assign(state, EXAMPLE, { sections: [], chosenTitleIndex: 0 });
-  EXAMPLE.sections.forEach((s) => state.sections.push({ id: uid('sec'), subtitle: s.subtitle, notes: s.notes, photos: [] }));
+  Object.assign(state, EXAMPLE, { chosenTitleIndex: 0, photos: state.photos });
   syncFormFromState();
-  renderSections();
   renderPreview();
   saveDraft();
 }
@@ -801,6 +838,7 @@ function syncFormFromState() {
   document.getElementById('companionInput').value = state.companion;
   document.getElementById('keywordsInput').value = state.keywordsRaw;
   document.getElementById('extraTagsInput').value = state.extraTagsRaw;
+  document.getElementById('summaryTextInput').value = state.summaryText;
   document.getElementById('summaryInput').value = state.summaryNotes;
   document.querySelectorAll('.star-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.star) <= state.rating));
 
@@ -808,6 +846,8 @@ function syncFormFromState() {
   document.getElementById('apiKeyInput').value = state.apiKey;
   document.getElementById('aiModelInput').value = state.aiModel;
   document.getElementById('aiSettingsBody').classList.toggle('open', state.aiEnabled);
+
+  renderPhotos();
 }
 
 function bindForm() {
@@ -820,7 +860,10 @@ function bindForm() {
   document.getElementById('companionInput').oninput = (e) => { state.companion = e.target.value; saveDraft(); };
   document.getElementById('keywordsInput').oninput = (e) => { state.keywordsRaw = e.target.value; saveDraft(); };
   document.getElementById('extraTagsInput').oninput = (e) => { state.extraTagsRaw = e.target.value; saveDraft(); };
+  document.getElementById('summaryTextInput').oninput = (e) => { state.summaryText = e.target.value; saveDraft(); };
   document.getElementById('summaryInput').oninput = (e) => { state.summaryNotes = e.target.value; saveDraft(); };
+
+  document.getElementById('photoAddInput').onchange = (e) => { addPhotos(e.target.files); e.target.value = ''; };
 
   document.querySelectorAll('.star-btn').forEach((btn) => {
     btn.onclick = () => {
@@ -831,7 +874,6 @@ function bindForm() {
     };
   });
 
-  document.getElementById('addSectionBtn').onclick = () => addSection();
   document.getElementById('generateBtn').onclick = () => {
     state.chosenTitleIndex = 0;
     if (state.aiEnabled && state.apiKey.trim()) generateWithAI();
@@ -886,14 +928,8 @@ function scrollToPreview() {
 /* ---------- 초기화 ---------- */
 
 function init() {
-  const hadDraft = loadDraft();
+  loadDraft();
   loadAISettings();
-  if (!hadDraft) {
-    addSection();
-    addSection();
-  } else {
-    renderSections();
-  }
   syncFormFromState();
   bindForm();
   renderPreview();

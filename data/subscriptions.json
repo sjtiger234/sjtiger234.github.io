@@ -1,13 +1,5 @@
 [
   {
-    "endpoint": "https://fcm.googleapis.com/fcm/send/e_vGauR_WdM:APA91bELvc4rhSgX9c95kvNHDzk0FrtkRiXTVi6bqK6vsZeOkch30L1xTf2sWgdVoiGDndchMw5MkplQ69jDFcueOsfdPNNqakKq5MsB0kjLaVA6Ogp8mSiH80e_-LfG5OPbTt8G8kjq",
-    "expirationTime": null,
-    "keys": {
-      "p256dh": "BDfKzKaHda2egDdmLFzcP4uPBmYYrOSYGE4ZwF5Ki3kSmf3TTaRkKgh-N8qtzGxYlDQLIeuW6JMkNbrjvqO_bcE",
-      "auth": "nfYaXF-QJFT5qohDeMa_1g"
-    }
-  },
-  {
     "endpoint": "https://fcm.googleapis.com/fcm/send/cZSe8Cwsfxc:APA91bG_2UNcM2dDISj74cUF-ptV5KCnPDwIyHiebNBRuSSUVC2QU2Sfgvs-cSYspveEQi_apcqSOQtGAdFq5-rCgrEC8EEdvggO_h3J-DrwNKMMkZK0OXDJhlEmAnGmmxYb73dKHU6N",
     "expirationTime": null,
     "keys": {

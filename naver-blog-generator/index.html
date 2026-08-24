@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>네이버 블로그 포스팅 생성기 — 맛집·여행·공연 후기</title>
+<meta name="description" content="사진과 핵심 내용만 입력하면 제목·목차·소제목·본문·총평·태그 순서로 사진 배치까지 자동 구성된 네이버 블로그 포스팅 초안을 만들어줍니다.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="tool-header">
+  <div class="tool-header-inner">
+    <a class="tool-brand" href="../index.html">← 홈으로</a>
+    <h1>네이버 블로그 포스팅 생성기</h1>
+    <p class="tool-sub">사진과 전체 내용 요약만 넣으면 소제목 구성 · 사진 배치 · 본문 · 총평 · 태그까지 자동으로 완성해드려요.</p>
+  </div>
+</header>
+
+<div class="mobile-tabs">
+  <button type="button" id="mobileTabForm" class="mobile-tab active">✏️ 입력</button>
+  <button type="button" id="mobileTabPreview" class="mobile-tab">👀 미리보기</button>
+</div>
+
+<main class="layout">
+
+  <!-- ================= 입력 패널 ================= -->
+  <section class="panel form-panel" id="formPanel">
+
+    <div class="field-group">
+      <label class="field-label">카테고리</label>
+      <div class="category-tabs">
+        <label class="category-tab">
+          <input type="radio" name="category" value="food" checked>
+          <span>🍽️ 맛집 후기</span>
+        </label>
+        <label class="category-tab">
+          <input type="radio" name="category" value="travel">
+          <span>✈️ 여행 후기</span>
+        </label>
+        <label class="category-tab">
+          <input type="radio" name="category" value="show">
+          <span>🎭 공연 후기</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label" for="placeInput">상호명 / 장소명</label>
+        <input type="text" id="placeInput" placeholder="예) 을지로 화로구이">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="regionInput">지역</label>
+        <input type="text" id="regionInput" placeholder="예) 서울 을지로">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label" for="dateInput">방문일</label>
+        <input type="date" id="dateInput">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="companionInput">함께한 사람</label>
+        <input type="text" id="companionInput" placeholder="예) 친구와, 가족과, 혼자">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">평점</label>
+      <div class="star-picker">
+        <button type="button" class="star-btn" data-star="1">★</button>
+        <button type="button" class="star-btn" data-star="2">★</button>
+        <button type="button" class="star-btn" data-star="3">★</button>
+        <button type="button" class="star-btn" data-star="4">★</button>
+        <button type="button" class="star-btn" data-star="5">★</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="keywordsInput">핵심 키워드 (쉼표로 구분, 검색 노출용)</label>
+      <input type="text" id="keywordsInput" placeholder="예) 노포 감성, 숯불구이, 가성비">
+    </div>
+
+    <div class="field-group">
+      <div class="field-label-row">
+        <label class="field-label">사진</label>
+        <span class="photo-count" id="photoCount"></span>
+      </div>
+      <div class="photo-zone">
+        <label class="photo-add-btn">
+          📷 사진 추가 (여러 장 한 번에 선택 가능)
+          <input type="file" accept="image/*" multiple hidden id="photoAddInput">
+        </label>
+        <div class="photo-thumbs" id="photoThumbs"></div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="summaryTextInput">전체 내용 요약 (한 줄씩, 편하게 적어주세요)</label>
+      <textarea id="summaryTextInput" rows="6" placeholder="예) 평일 저녁 7시 웨이팅 10분&#10;허름한 골목 안 노포 느낌, 테이블 4개뿐&#10;대패삼겹살과 목살 세트 주문, 연탄 화로 직접 구워먹는 방식&#10;고기 질 좋고 불맛 확실함&#10;2인 기준 4만원대"></textarea>
+      <p class="field-hint">소제목 구성과 사진 배치는 자동으로 처리됩니다. AI 모드는 구글 검색으로 기본 정보(주소·영업시간·가격 등)와 배경 정보까지 찾아 반영하며, 분량 제한 없이 내용에 맞게 상세히 작성합니다.</p>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label" for="nicknameInput">블로그 닉네임 (선택)</label>
+        <input type="text" id="nicknameInput" placeholder="예) 멋진 나그네">
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="signoffInput">마무리 인사말 (선택)</label>
+        <input type="text" id="signoffInput" placeholder="예) 다음에도 재미있는 이야기로 찾아올게요 :)">
+      </div>
+    </div>
+
+    <div class="field-group ai-panel">
+      <label class="ai-toggle-row">
+        <input type="checkbox" id="aiToggle">
+        <span class="field-label">✨ AI로 문장 다듬기 (Gemini 무료 API)</span>
+      </label>
+      <div class="ai-settings-body" id="aiSettingsBody">
+        <p class="ai-help-text">
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>에서
+          무료로 API 키를 발급받아 붙여넣으면, 먼저 <b>구글 검색으로 장소·공연·인물에 대한 실제 정보를 취재하듯 찾은 뒤</b>
+          입력하신 메모와 합쳐 기본 정보 박스, 배경 소개, 상세 후기까지 갖춘 글로 정리해줍니다(검색 연동 실패 시
+          메모만으로 다듬는 방식으로 자동 전환). 분량은 제한 없이 내용에 맞게 상세하게 작성됩니다.
+          검색 연동은 하루 약 1,500건까지 무료이고, 개인 블로그 포스팅 용도로는 무료 한도를 넘길 일이 거의 없어요.
+          이 사이트는 서버가 없어 <b>키가 브라우저에만 저장</b>되고 Google API로 직접 전송되며, 사진은 전송되지
+          않고 텍스트(장소명, 메모 등)만 전송됩니다. 무료 티어는 Google이 품질 개선 목적으로 요청 내용을 활용할
+          수 있다는 점도 참고해주세요.
+          <br><br>
+          ⚠️ 참고: 구글이 최근 발급하는 <code>AQ.</code>로 시작하는 신형식 키는 현재 구글 쪽 버그로 401 오류가
+          발생할 수 있어요(이 도구의 문제가 아닙니다). 안 되면 아래 "Claude로 작성하기"를 대신 이용해보세요.
+        </p>
+        <div class="field-group">
+          <label class="field-label" for="apiKeyInput">Gemini API 키</label>
+          <div class="key-input-row">
+            <input type="password" id="apiKeyInput" placeholder="AIza...">
+            <button type="button" id="toggleKeyVisible" class="icon-btn" title="키 표시/숨김">👁</button>
+            <button type="button" id="clearKeyBtn" class="btn-secondary small">삭제</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="aiModelInput">모델명 (고급, 보통 변경 불필요)</label>
+          <input type="text" id="aiModelInput" placeholder="gemini-2.5-flash">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-group ai-panel claude-panel">
+      <label class="field-label">🤖 Claude로 작성하기 (무료 · API 키 불필요)</label>
+      <p class="ai-help-text">
+        아래 버튼으로 프롬프트를 복사해서 <a href="https://claude.ai" target="_blank" rel="noopener">claude.ai</a>나
+        이미 쓰고 계신 클로드 대화창에 붙여넣고 답변을 받으세요. 그 답변 전체(설명 문구 포함해도 괜찮아요)를
+        아래 칸에 붙여넣고 "가져오기"를 누르면 사진 배치까지 자동으로 완성됩니다. API 키가 필요 없고, 이미 클로드를
+        쓰고 계시다면 완전히 무료예요.
+      </p>
+      <button type="button" id="copyClaudePromptBtn" class="btn-secondary">📋 클로드용 프롬프트 복사</button>
+      <div class="field-group">
+        <label class="field-label" for="claudeResultInput">클로드 답변 붙여넣기</label>
+        <textarea id="claudeResultInput" rows="4" placeholder="클로드가 답변한 내용 전체를 여기에 붙여넣으세요"></textarea>
+      </div>
+      <button type="button" id="importClaudeResultBtn" class="btn-primary">📥 가져오기</button>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="summaryInput">총평 메모 (선택, 한 줄씩)</label>
+      <textarea id="summaryInput" rows="3" placeholder="예) 가격 대비 만족도 높음&#10;재방문 의사 있음"></textarea>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label" for="extraTagsInput">추가 태그 (선택, 쉼표로 구분)</label>
+      <input type="text" id="extraTagsInput" placeholder="예) 을지로맛집, 노포">
+    </div>
+
+    <p class="mode-indicator" id="modeIndicator"></p>
+    <div class="action-row">
+      <button type="button" id="exampleBtn" class="btn-secondary">예시로 채워보기</button>
+      <button type="button" id="resetBtn" class="btn-secondary">전체 초기화</button>
+      <button type="button" id="templateOnlyBtn" class="btn-secondary">규칙 기반 초안만 보기</button>
+      <button type="button" id="generateBtn" class="btn-primary">✨ 포스팅 생성하기</button>
+    </div>
+    <p class="privacy-note">사진과 입력 내용은 저희 서버로 전송되지 않고 이 브라우저 안에서만 처리돼요. (사진은 새로고침 시 사라지므로 완성 후 내보내기를 먼저 해주세요) AI 다듬기를 켜면 텍스트 메모가 Google Gemini API로 전송됩니다.</p>
+
+  </section>
+
+  <!-- ================= 미리보기 패널 ================= -->
+  <section class="panel preview-panel" id="previewPanel">
+    <div class="preview-toolbar">
+      <button type="button" id="copyRichBtn" class="btn-primary">📋 사진 포함 복사</button>
+      <button type="button" id="copyPlainBtn" class="btn-secondary">텍스트만 복사</button>
+      <button type="button" id="downloadBtn" class="btn-secondary">HTML로 저장</button>
+    </div>
+    <div id="statusMsg" class="status-msg"></div>
+    <article id="previewArticle" class="preview-article"></article>
+  </section>
+
+</main>
+
+<footer class="tool-footer">
+  <p>이 도구는 입력하신 메모를 자연스러운 문장으로 다듬고, 사진을 본문 흐름에 맞게 배치해주는 보조 도구예요. 생성된 글은 붙여넣기 전에 한 번 더 읽어보고 다듬어 주세요.</p>
+  <p class="version-tag">버전: 2026-08-24-v8 (이 숫자가 최신인지 확인해보세요)</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

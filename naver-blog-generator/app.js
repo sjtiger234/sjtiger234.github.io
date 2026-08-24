@@ -249,12 +249,45 @@ function splitIntoChunks(items, n) {
 }
 function nonEmptyArr(a) { return Array.isArray(a) && a.length > 0; }
 
+function sectionSearchText(sec) {
+  const parts = [sec.subtitle || ''];
+  if (nonEmptyArr(sec.facts)) parts.push(sec.facts.map((f) => `${f.label} ${f.value}`).join(' '));
+  if (nonEmptyArr(sec.list)) parts.push(sec.list.join(' '));
+  if (nonEmptyArr(sec.paragraphs)) parts.push(sec.paragraphs.join(' '));
+  return parts.join(' ');
+}
+
+// 사진 캡션에 적힌 단어가 소제목·본문에 등장하면 그 섹션에 우선 배치하고,
+// 캡션이 없거나 일치하는 곳이 없는 사진은 남은 섹션에 균등하게 나눈다.
+function groupPhotosByCaption(photos, sectionTexts) {
+  const n = sectionTexts.length;
+  if (n === 0) return [];
+  const groups = Array.from({ length: n }, () => []);
+  const leftover = [];
+  photos.forEach((p) => {
+    const caption = (p.caption || '').trim();
+    if (!caption) { leftover.push(p); return; }
+    const tokens = caption.split(/[\s,·.\/()~-]+/).filter((t) => t.length >= 2);
+    let bestIdx = -1;
+    let bestScore = 0;
+    sectionTexts.forEach((text, i) => {
+      const score = tokens.reduce((sum, t) => sum + (text.includes(t) ? 1 : 0), 0);
+      if (score > bestScore) { bestScore = score; bestIdx = i; }
+    });
+    if (bestIdx >= 0) groups[bestIdx].push(p); else leftover.push(p);
+  });
+  const leftoverChunks = splitIntoChunks(leftover, n);
+  leftoverChunks.forEach((chunk, i) => { groups[i] = groups[i].concat(chunk); });
+  return groups;
+}
+
 function assignPhotosToSections(photos, sections) {
   const eligible = sections.map((sec, i) => (nonEmptyArr(sec.paragraphs) ? i : -1)).filter((i) => i >= 0);
   const targetIdxs = eligible.length ? eligible : sections.map((_, i) => i);
-  const chunks = splitIntoChunks(photos, targetIdxs.length);
+  const sectionTexts = targetIdxs.map((idx) => sectionSearchText(sections[idx]));
+  const groups = groupPhotosByCaption(photos, sectionTexts);
   const result = sections.map(() => []);
-  targetIdxs.forEach((idx, k) => { result[idx] = chunks[k]; });
+  targetIdxs.forEach((idx, k) => { result[idx] = groups[k]; });
   return result;
 }
 
@@ -364,7 +397,8 @@ function buildTemplateSections(s) {
     : Math.min(DEFAULT_SUBTITLES[category].length, Math.max(1, Math.ceil(bullets.length / 3)));
   if (sectionCount === 0) return [];
   const bulletChunks = splitIntoChunks(bullets, sectionCount);
-  const photoChunks = splitIntoChunks(s.photos, sectionCount);
+  const sectionTexts = bulletChunks.map((chunk, i) => `${defaultSubtitle(category, i)} ${chunk.join(' ')}`);
+  const photoChunks = groupPhotosByCaption(s.photos, sectionTexts);
   return bulletChunks.map((chunk, i) => {
     const subtitle = defaultSubtitle(category, i);
     const sentences = chunk.map((b, bi) => (bi === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
@@ -744,6 +778,7 @@ function summarizeInput(s) {
     keywords: parseKeywords(s.keywordsRaw),
     overallNotes: splitBullets(s.summaryText),
     photoCount: s.photos.length,
+    photoCaptions: s.photos.map((p) => p.caption.trim()).filter(Boolean),
     finalThoughts: splitBullets(s.summaryNotes),
   };
 }
@@ -755,7 +790,8 @@ const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인�
 - 가능하면 장소·인물·단체의 배경(이력, 유명해진 계기, 역사 등)을 다루는 소제목을 하나 포함할 것 (취재 노트에 근거가 있을 때만. 근거 없이 지어내지 말 것)
 - 코스 옵션, 프로그램/세트리스트, 방문 팁처럼 목록으로 정리하는 게 자연스러운 내용은 해당 섹션의 list 필드에 배열로 담을 것
 - 섹션당 문단(paragraphs)은 2~4개, 문단당 2~4문장 정도로, 취재된 실제 정보(주소·영업시간·가격대·메뉴명·특징 등)를 구체적으로 담아 밀도 있게 쓸 것
-- photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것`;
+- photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것
+- photoCaptions는 사용자가 실제로 찍은 사진에 붙인 설명이다. 이 목록에 나온 소재(예: "은각사 입구", "정원 풍경")는 관련 있는 소제목의 본문에서 최소 한 번씩 구체적으로 언급해서, 나중에 그 사진이 해당 문단 옆에 자동 배치됐을 때 내용과 사진이 자연스럽게 맞아떨어지도록 할 것`;
 
 function buildResearchPrompt(s) {
   const input = summarizeInput(s);

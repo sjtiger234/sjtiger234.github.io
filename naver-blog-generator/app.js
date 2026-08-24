@@ -4,15 +4,16 @@
 
 /* ---------- 카테고리별 데이터 ---------- */
 
-const CATEGORY_LABEL = { food: '맛집 후기', travel: '여행 후기', show: '공연 후기' };
+const CATEGORY_LABEL = { food: '맛집 후기', travel: '여행 후기', show: '공연 후기', product: '제품 사용 후기' };
 
 // gemini-2.5-flash는 신규 사용자에게 더 이상 제공되지 않음(구글 API 404 안내 기준) — 최신 모델로 교체
 const DEFAULT_AI_MODEL = 'gemini-3.6-flash';
 
 const DEFAULT_SUBTITLES = {
-  food:   ['첫인상과 웨이팅', '메뉴 소개', '맛 평가', '가격과 서비스'],
-  travel: ['첫인상', '코스와 동선', '포토스팟', '꿀팁과 정보'],
-  show:   ['관람 전 준비', '공연 하이라이트', '연출과 배우', '관람 후 여운'],
+  food:    ['첫인상과 웨이팅', '메뉴 소개', '맛 평가', '가격과 서비스'],
+  travel:  ['첫인상', '코스와 동선', '포토스팟', '꿀팁과 정보'],
+  show:    ['관람 전 준비', '공연 하이라이트', '연출과 배우', '관람 후 여운'],
+  product: ['개봉과 첫인상', '주요 기능과 사용법', '장단점', '가격과 구매 정보'],
 };
 
 const INTRO_OPENERS = {
@@ -34,6 +35,12 @@ const INTRO_OPENERS = {
     '{date} 저녁, {place} 공연장 후기를 남겨봅니다.',
     '{companion} {place}에서 잊지 못할 시간을 보냈어요.',
   ],
+  product: [
+    '{date} {place}을(를) 구매해서 써봤어요.',
+    '요즘 관심 있게 보던 {place}, 드디어 구매했습니다.',
+    '{keyword} 때문에 {place}을(를) 들이게 됐어요.',
+    '{date}, {place} 사용 후기를 남겨봅니다.',
+  ],
 };
 
 const INTRO_CLOSERS = {
@@ -51,6 +58,11 @@ const INTRO_CLOSERS = {
     '관람 전 준비부터 공연 후 여운까지 순서대로 남겨봅니다.',
     '스포일러는 최소화하되, 느낀 감정은 최대한 담아보려고 해요.',
     '아래 목차 순서대로 솔직한 관람 후기를 적어볼게요.',
+  ],
+  product: [
+    '개봉기부터 실사용 느낌까지 순서대로 정리해봅니다.',
+    '장단점을 최대한 솔직하게 담아보려고 해요.',
+    '아래 목차 순서대로 사용 후기를 남겨볼게요.',
   ],
 };
 
@@ -81,6 +93,14 @@ const WRAPPERS = {
     (x) => `${x}를 보며 박수가 절로 나왔어요.`,
     (x) => `${x} 연출은 다시 봐도 감탄스러울 것 같아요.`,
   ],
+  product: [
+    (x) => `${x} 부분이 특히 마음에 들었어요.`,
+    (x) => `${x} 덕분에 만족도가 높았습니다.`,
+    (x) => `${x}는 이 제품의 강점처럼 느껴졌어요.`,
+    (x) => `${x} 부분은 아쉬운 점으로 남았습니다.`,
+    (x) => `무엇보다 ${x}가 좋았어요.`,
+    (x) => `${x}라는 점에서 구매를 잘했다는 생각이 들었습니다.`,
+  ],
 };
 
 const SECTION_CLOSERS = {
@@ -99,32 +119,39 @@ const SECTION_CLOSERS = {
     '다음 시즌에도 꼭 다시 보고 싶다는 생각이 들었습니다.',
     '이 장면 하나만으로도 관람할 가치는 충분했어요.',
   ],
+  product: [
+    '이 부분만으로도 구매할 이유는 충분했어요.',
+    '전반적으로 기대 이상이었습니다.',
+    '다음에 필요하면 같은 브랜드 제품을 또 고려하게 될 것 같아요.',
+  ],
 };
 
 const RATING_TEXT = {
-  1: '아쉬운 점이 많이 남는 방문이었어요.',
-  2: '기대보다는 조금 아쉬웠습니다.',
-  3: '무난하게 즐길 만했어요.',
-  4: '만족스러운 방문이었어요, 다시 찾을 의향이 있습니다.',
-  5: '별 다섯 개를 아낌없이 주고 싶을 만큼 만족스러웠어요.',
+  food:    { 1: '아쉬운 점이 많이 남는 방문이었어요.', 2: '기대보다는 조금 아쉬웠습니다.', 3: '무난하게 즐길 만했어요.', 4: '만족스러운 방문이었어요, 다시 찾을 의향이 있습니다.', 5: '별 다섯 개를 아낌없이 주고 싶을 만큼 만족스러웠어요.' },
+  travel:  { 1: '아쉬운 점이 많이 남는 여행이었어요.', 2: '기대보다는 조금 아쉬웠습니다.', 3: '무난하게 즐길 만했어요.', 4: '만족스러운 여행이었어요, 다시 찾을 의향이 있습니다.', 5: '별 다섯 개를 아낌없이 주고 싶을 만큼 만족스러웠어요.' },
+  show:    { 1: '아쉬운 점이 많이 남는 관람이었어요.', 2: '기대보다는 조금 아쉬웠습니다.', 3: '무난하게 즐길 만했어요.', 4: '만족스러운 공연이었어요, 다음에도 찾을 의향이 있습니다.', 5: '별 다섯 개를 아낌없이 주고 싶을 만큼 만족스러웠어요.' },
+  product: { 1: '아쉬운 점이 많이 남는 제품이었어요.', 2: '기대보다는 조금 아쉬웠습니다.', 3: '무난하게 쓸 만했어요.', 4: '만족스러운 제품이었어요, 재구매 의향이 있습니다.', 5: '별 다섯 개를 아낌없이 주고 싶을 만큼 만족스러웠어요.' },
 };
 
 const SUMMARY_CLOSERS = {
   food: ['다음에 또 방문하고 싶은 곳이에요.', '주변에도 자신 있게 추천할 만합니다.', '재방문 의사 100%예요.'],
   travel: ['다시 이곳을 찾게 될 것 같아요.', '여행 코스로 자신 있게 추천합니다.', '사진으로 다 담지 못한 여운이 남아요.'],
   show: ['여운이 가시지 않아 다음 공연도 예매를 고민 중이에요.', '주변에 꼭 추천하고 싶은 공연입니다.', '다시 봐도 좋을 것 같은 무대였어요.'],
+  product: ['다음에 또 필요하면 재구매할 의향이 있어요.', '주변에도 자신 있게 추천할 만합니다.', '가격 대비 만족도가 높은 제품이었어요.'],
 };
 
 const SIGNOFF_POOL = {
   food: ['다음에도 맛있는 맛집 이야기로 찾아올게요 :)', '다음에도 재미있는 맛집 이야기로 찾아올게요 :)'],
   travel: ['다음에도 즐거운 여행 이야기로 찾아올게요 :)', '다음에도 재미있는 여행 이야기로 찾아올게요 :)'],
   show: ['다음에도 감동적인 공연 이야기로 찾아올게요 :)', '다음에도 재미있는 공연 이야기로 찾아올게요 :)'],
+  product: ['다음에도 솔직한 제품 후기로 찾아올게요 :)', '다음에도 유용한 사용 후기로 찾아올게요 :)'],
 };
 
 const TAG_POOL = {
   food: ['맛집', '맛집추천', '맛집투어', '먹스타그램', '맛스타그램', '로컬맛집', '데이트코스', '맛집리뷰'],
   travel: ['여행', '국내여행', '여행스타그램', '여행에미치다', '여행코스', '당일치기', '주말여행', '여행추천'],
   show: ['공연', '공연후기', '문화생활', '공연추천', '주말나들이', '데이트코스', '콘서트후기', '전시후기'],
+  product: ['제품리뷰', '내돈내산', '사용후기', '언박싱', '추천템', '가성비템', '내돈내산리뷰', '솔직후기'],
 };
 
 /* ---------- 상태 ---------- */
@@ -144,6 +171,7 @@ let state = {
   aiEnabled: false,
   apiKey: '',
   aiModel: DEFAULT_AI_MODEL,
+  analyzePhotos: false,
 };
 
 let lastAIJson = null;
@@ -294,6 +322,51 @@ function assignPhotosToSections(photos, sections) {
   return result;
 }
 
+/* ---------- 사진 실제 분석용 (Gemini 비전, 선택 기능) ---------- */
+
+const MAX_ANALYZE_PHOTOS = 8;
+
+function pickPhotosForAnalysis(photos, max = MAX_ANALYZE_PHOTOS) {
+  if (photos.length <= max) return photos;
+  const step = photos.length / max;
+  const picked = [];
+  for (let i = 0; i < max; i++) picked.push(photos[Math.floor(i * step)]);
+  return picked;
+}
+
+function resizeImageForApi(dataUrl, maxDim = 1024, quality = 0.82) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+function dataUrlToInlinePart(dataUrl) {
+  const match = dataUrl.match(/^data:([^;]+);base64,(.*)$/);
+  return match ? { mimeType: match[1], data: match[2] } : null;
+}
+
+async function buildImagePartsForAnalysis(photos) {
+  const selected = pickPhotosForAnalysis(photos);
+  const resized = await Promise.all(selected.map((p) => resizeImageForApi(p.dataUrl)));
+  return resized.map(dataUrlToInlinePart).filter(Boolean);
+}
+
 function buildGreetingLine(s) {
   return s.nickname.trim() ? `안녕하세요? ${s.nickname.trim()}입니다.` : '';
 }
@@ -342,6 +415,11 @@ function buildTitleOptions(s) {
       `${region}${place} 공연 후기 · ${kw}`,
       `${place} 관람 후기, ${kw}가 남긴 여운`,
       `${(s.region || '').trim()} ${place} | ${kw} 솔직 리뷰`.trim(),
+    ],
+    product: [
+      `${place} 솔직 사용 후기 (feat. ${kw})`,
+      `${place} 리얼 리뷰 | ${kw}${kw2 ? ' & ' + kw2 : ''}`,
+      `${place} 써보고 남기는 장단점 정리 (${kw})`,
     ],
   };
   return bank[s.category].map((t) => t.replace(/\s+/g, ' ').trim());
@@ -449,7 +527,7 @@ function generatePost(s) {
 
   const summaryBullets = splitBullets(s.summaryNotes);
   let summarySentences = summaryBullets.map((b, i) => (i === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
-  if (s.rating > 0) summarySentences.unshift(RATING_TEXT[s.rating]);
+  if (s.rating > 0) summarySentences.unshift(RATING_TEXT[s.category][s.rating]);
   summarySentences.push(pick(SUMMARY_CLOSERS[category]));
   summarySentences = finalizeSummary(s, summarySentences);
 
@@ -505,7 +583,7 @@ function composeFromAI(s, ai, sourceLabel = 'ai') {
   } else {
     const bullets = splitBullets(s.summaryNotes);
     summarySentences = bullets.map((b, i) => (i === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
-    if (s.rating > 0) summarySentences.unshift(RATING_TEXT[s.rating]);
+    if (s.rating > 0) summarySentences.unshift(RATING_TEXT[s.category][s.rating]);
     summarySentences.push(pick(SUMMARY_CLOSERS[category]));
   }
   summarySentences = finalizeSummary(s, summarySentences);
@@ -767,7 +845,7 @@ const AI_SETTINGS_KEY = 'naver-blog-generator-ai-settings-v1';
 function saveAISettings() {
   try {
     localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify({
-      aiEnabled: state.aiEnabled, apiKey: state.apiKey, aiModel: state.aiModel,
+      aiEnabled: state.aiEnabled, apiKey: state.apiKey, aiModel: state.aiModel, analyzePhotos: state.analyzePhotos,
     }));
   } catch (e) { /* 용량 초과 등은 무시 */ }
 }
@@ -783,6 +861,7 @@ function loadAISettings() {
       // 예전 기본값(gemini-2.5-flash)이 저장돼 있으면 최신 기본 모델로 자동 승격
       state.aiModel = saved.aiModel === 'gemini-2.5-flash' ? DEFAULT_AI_MODEL : saved.aiModel;
     }
+    if (typeof saved.analyzePhotos === 'boolean') state.analyzePhotos = saved.analyzePhotos;
   } catch (e) { /* 무시 */ }
 }
 
@@ -805,18 +884,19 @@ function summarizeInput(s) {
 const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인생 맛집" 남발 등)과 이모지 남발을 피하고, 담백하고 자연스러운 문체로 쓸 것
 - 지역·장소명·키워드를 억지스럽지 않게 자연스럽게 본문에 녹여 검색 노출에 도움이 되도록 할 것
 - 전체 분량에는 엄격한 글자수 제한을 두지 않는다. 취재 노트와 overallNotes가 풍부하면 소제목을 6~9개까지 늘려 실제 파워블로거의 후기처럼 충실하고 상세하게 쓰고, 정보가 적으면 2~4개 정도로 간결하게 쓸 것
-- 첫 소제목은 가능하면 "기본 정보"에 해당하는 섹션으로 구성해서, 그 섹션의 facts 필드에 확인된 사실(주소, 전화번호, 영업시간/공연일시, 가격, 정기휴무 등)을 key-value로 정리할 것. 확인된 사실이 없으면 이 섹션은 생략할 것
+- 첫 소제목은 가능하면 "기본 정보"에 해당하는 섹션으로 구성해서, 그 섹션의 facts 필드에 확인된 사실을 key-value로 정리할 것 — 맛집/여행/공연은 주소·전화번호·영업시간/공연일시·가격·정기휴무 등, 제품은 제품명·모델명·가격·주요 스펙(사양)·구성품·제조사/판매처 등. 확인된 사실이 없으면 이 섹션은 생략할 것
 - 가능하면 장소·인물·단체의 배경(이력, 유명해진 계기, 역사 등)을 다루는 소제목을 하나 포함할 것 (취재 노트에 근거가 있을 때만. 근거 없이 지어내지 말 것)
 - 코스 옵션, 프로그램/세트리스트, 방문 팁처럼 목록으로 정리하는 게 자연스러운 내용은 해당 섹션의 list 필드에 배열로 담을 것
 - 섹션당 문단(paragraphs)은 2~4개, 문단당 2~4문장 정도로, 취재된 실제 정보(주소·영업시간·가격대·메뉴명·특징 등)를 구체적으로 담아 밀도 있게 쓸 것
 - photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것
 - photoCaptions는 사용자가 실제로 찍은 사진에 붙인 설명이다. 이 목록에 나온 소재(예: "은각사 입구", "정원 풍경")는 관련 있는 소제목의 본문에서 최소 한 번씩 구체적으로 언급해서, 나중에 그 사진이 해당 문단 옆에 자동 배치됐을 때 내용과 사진이 자연스럽게 맞아떨어지도록 할 것
 - intro(도입부)에 "안녕하세요", "~입니다/~이에요" 같은 인사말·자기소개 문장을 넣지 말 것. 인사말은 시스템이 별도로 자동으로 붙이므로, intro는 인사말 없이 바로 방문/관람 이야기로 시작할 것
+- 이 메시지에 실제 사진이 첨부되어 있다면, 사진을 직접 관찰해서 실제로 보이는 요소(색상, 사물, 구도, 분위기, 글자, 인테리어 등)를 관련 있는 소제목의 문장에 사실적으로 반영할 것. 사진이 첨부되지 않았거나 특정 사진과 관련 없는 내용은 사진에서 본 것처럼 지어내지 말 것
 - [가장 중요, 반드시 지킬 것] 모든 문장은 예외 없이 "~요/~어요/~았어요/~였어요"(해요체) 또는 "~습니다/~입니다/~였습니다"(합쇼체)로 끝나야 한다. "~다."로 끝나는 문장(반말 서술체, 평서체)은 단 한 문장도 있으면 안 된다.
   절대 쓰면 안 되는 종결: "~였다.", "~했다.", "~있다.", "~없다.", "~한다.", "~된다.", "~같다.", "~이다.", "~보인다.", "~들었다.", "~났다.", "~간직하고 있다.", "~평가받는다.", "~이어진다.", "~붙었다고 한다."
   반드시 이렇게 바꿀 것(예시): "다녀온 적이 있다." → "다녀온 적이 있어요.” / "남아 있다." → "남아 있어요." / "지쇼지다." → "지쇼지예요." / "이동했다." → "이동했어요." / "올라가야 한다." → "올라가야 해요." / "지루하지 않았다." → "지루하지 않았어요." / "목조 건물이다." → "목조 건물이에요." / "들었다." → "들었어요." / "조용했다." → "조용했어요." / "좋았다." → "좋았어요." / "나온다." → "나와요." / "이어진다." → "이어져요." / "곳이다." → "곳이에요." / "들었다." → "들었어요."
   문장을 다 쓴 뒤, 마지막 글자가 "다."로 끝나는 문장이 하나라도 있는지 스스로 다시 확인하고, 있다면 전부 "~요/~습니다"체로 고쳐서 최종 답변에는 절대 남기지 말 것. 실제 파워블로거 글(예: "안녕하세요? 멋진 나그네입니다. 어제 ~보고 왔어요. ~빛이 났습니다.")은 처음부터 끝까지 이 존댓말체로만 쓰여 있다.
-  단, "~습니다"만 계속 반복되면 딱딱하니 "~요"체와 "~습니다"체를 문장마다 자연스럽게 섞을 것.`;
+  단, 한쪽으로 치우치면 안 된다. "~요/~어요"체와 "~습니다/~입니다"체를 전체 글에서 대략 반반 정도 비율로, 두세 문장마다 자연스럽게 번갈아 섞어서 리듬감 있게 쓸 것 — "~요"만 계속 이어지거나 "~습니다"만 계속 이어지지 않도록 할 것.`;
 
 function buildResearchPrompt(s) {
   const input = summarizeInput(s);
@@ -824,9 +904,9 @@ function buildResearchPrompt(s) {
 
 찾아야 할 정보 (해당되는 것만, "기본 정보" 박스에 쓸 수 있도록 최대한 정확한 값으로):
 - 정확한 위치/주소, 전화번호, 가는 법, 영업시간·정기휴무(또는 공연 일시), 가격대·티켓 가격
-- 대표 메뉴/시그니처, 웨이팅 여부 (맛집) / 코스, 입장료, 추천 동선, 주변 명소 (여행) / 러닝타임, 캐스팅, 공연장 정보, 관람 포인트 (공연)
-- 관련 인물·단체의 배경 (셰프/연주자/극단 등의 이력, 유명해진 계기, 수상 경력, 방송 출연 등)
-- 최근 방문객·관람객들의 공통적인 평가나 특징
+- 대표 메뉴/시그니처, 웨이팅 여부 (맛집) / 코스, 입장료, 추천 동선, 주변 명소 (여행) / 러닝타임, 캐스팅, 공연장 정보, 관람 포인트 (공연) / 정확한 제품명·모델명, 가격, 주요 스펙(사양), 구성품, 제조사·공식 판매처 (제품)
+- 관련 인물·단체·브랜드의 배경 (셰프/연주자/극단/제조사 등의 이력, 유명해진 계기, 수상 경력, 방송 출연 등)
+- 최근 방문객·관람객·구매자들의 공통적인 평가나 특징
 - 사용자가 직접 남긴 아래 메모(실제 경험, overallNotes)
 
 사용자 입력 정보:
@@ -904,6 +984,8 @@ function buildClaudePrompt(s) {
 
 웹 검색이 가능하다면, 아래 장소·공연·인물에 대한 실제 정보(정확한 주소, 전화번호, 영업시간·공연일시, 가격, 관련 인물·단체의 이력 등)를 찾아서 반영해주세요. 검색이 불가능한 상황이라면 확인되지 않은 구체적 사실은 지어내지 말고 아래 입력 정보만으로 작성하세요.
 
+이 대화에 사진 파일이 함께 첨부되어 있다면 반드시 직접 살펴보고, 사진에 실제로 보이는 내용을 관련 소제목에 사실적으로 녹여서 써주세요.
+
 작성 원칙:
 ${WRITING_PRINCIPLES}
 
@@ -955,10 +1037,11 @@ function importClaudeResult() {
   }
 }
 
-async function callGeminiApi(apiKey, model, prompt, { useSearch = false, jsonMode = false } = {}) {
+async function callGeminiApi(apiKey, model, prompt, { useSearch = false, jsonMode = false, images = [] } = {}) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const parts = [{ text: prompt }, ...images.map((img) => ({ inline_data: { mime_type: img.mimeType, data: img.data } }))];
   const body = {
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    contents: [{ role: 'user', parts }],
     generationConfig: { temperature: 0.9, maxOutputTokens: 8192 },
   };
   if (jsonMode) body.generationConfig.responseMimeType = 'application/json';
@@ -1001,13 +1084,20 @@ async function generateWithAI() {
   const model = state.aiModel || DEFAULT_AI_MODEL;
 
   try {
+    let images = [];
+    if (state.analyzePhotos && state.photos.length) {
+      btn.textContent = '📷 사진 분석 준비 중...';
+      flashStatus('사진을 분석용으로 준비하고 있어요...');
+      images = await buildImagePartsForAnalysis(state.photos);
+    }
+
     btn.textContent = '🔎 관련 정보 검색 중...';
     flashStatus('구글 검색으로 관련 정보를 찾고 있어요. 잠시만 기다려주세요...');
     const research = await callGeminiApi(state.apiKey, model, buildResearchPrompt(state), { useSearch: true });
 
     btn.textContent = '✨ 글로 정리하는 중...';
     flashStatus('찾은 정보를 바탕으로 글을 정리하고 있어요...');
-    const restructured = await callGeminiApi(state.apiKey, model, buildRestructurePrompt(state, research.text), { jsonMode: true });
+    const restructured = await callGeminiApi(state.apiKey, model, buildRestructurePrompt(state, research.text), { jsonMode: true, images });
     const json = parseAIJson(restructured.text);
     lastAIJson = json;
     renderAIPost(json, 'ai-researched');
@@ -1019,7 +1109,8 @@ async function generateWithAI() {
     try {
       btn.textContent = '✨ AI가 다듬는 중...';
       flashStatus('검색 연동에 실패해 메모 기반으로 다듬고 있어요...');
-      const fallback = await callGeminiApi(state.apiKey, model, buildFallbackJsonPrompt(state), { jsonMode: true });
+      const images = (state.analyzePhotos && state.photos.length) ? await buildImagePartsForAnalysis(state.photos) : [];
+      const fallback = await callGeminiApi(state.apiKey, model, buildFallbackJsonPrompt(state), { jsonMode: true, images });
       const json = parseAIJson(fallback.text);
       lastAIJson = json;
       renderAIPost(json, 'ai');
@@ -1053,8 +1144,24 @@ function loadExample() {
 
 /* ---------- 폼 <-> 상태 동기화 ---------- */
 
+const FIELD_LABELS = {
+  food:    { place: '상호명 / 장소명', region: '지역', placePlaceholder: '예) 을지로 화로구이', regionPlaceholder: '예) 서울 을지로' },
+  travel:  { place: '상호명 / 장소명', region: '지역', placePlaceholder: '예) 은각사', regionPlaceholder: '예) 일본 교토' },
+  show:    { place: '상호명 / 장소명', region: '지역', placePlaceholder: '예) 구리아트홀', regionPlaceholder: '예) 경기 구리' },
+  product: { place: '제품명', region: '브랜드 / 구매처', placePlaceholder: '예) 무선청소기 XY-100', regionPlaceholder: '예) OO전자, 쿠팡' },
+};
+
+function updateFieldLabels() {
+  const labels = FIELD_LABELS[state.category] || FIELD_LABELS.food;
+  document.getElementById('placeLabel').textContent = labels.place;
+  document.getElementById('regionLabel').textContent = labels.region;
+  document.getElementById('placeInput').placeholder = labels.placePlaceholder;
+  document.getElementById('regionInput').placeholder = labels.regionPlaceholder;
+}
+
 function syncFormFromState() {
   document.querySelectorAll('input[name="category"]').forEach((r) => { r.checked = r.value === state.category; });
+  updateFieldLabels();
   document.getElementById('placeInput').value = state.place;
   document.getElementById('regionInput').value = state.region;
   document.getElementById('dateInput').value = state.date;
@@ -1070,6 +1177,7 @@ function syncFormFromState() {
   document.getElementById('aiToggle').checked = state.aiEnabled;
   document.getElementById('apiKeyInput').value = state.apiKey;
   document.getElementById('aiModelInput').value = state.aiModel;
+  document.getElementById('analyzePhotosToggle').checked = state.analyzePhotos;
   document.getElementById('aiSettingsBody').classList.toggle('open', state.aiEnabled);
 
   renderPhotos();
@@ -1077,7 +1185,7 @@ function syncFormFromState() {
 
 function bindForm() {
   document.querySelectorAll('input[name="category"]').forEach((r) => {
-    r.onchange = () => { state.category = r.value; saveDraft(); };
+    r.onchange = () => { state.category = r.value; updateFieldLabels(); saveDraft(); };
   });
   document.getElementById('placeInput').oninput = (e) => { state.place = e.target.value; saveDraft(); };
   document.getElementById('regionInput').oninput = (e) => { state.region = e.target.value; saveDraft(); };
@@ -1159,6 +1267,7 @@ function bindForm() {
   const apiKeyInput = document.getElementById('apiKeyInput');
   apiKeyInput.oninput = (e) => { state.apiKey = e.target.value.trim(); saveAISettings(); };
   document.getElementById('aiModelInput').oninput = (e) => { state.aiModel = e.target.value.trim() || DEFAULT_AI_MODEL; saveAISettings(); };
+  document.getElementById('analyzePhotosToggle').onchange = (e) => { state.analyzePhotos = e.target.checked; saveAISettings(); };
   document.getElementById('toggleKeyVisible').onclick = () => {
     apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
   };

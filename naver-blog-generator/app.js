@@ -6,6 +6,9 @@
 
 const CATEGORY_LABEL = { food: '맛집 후기', travel: '여행 후기', show: '공연 후기' };
 
+// gemini-2.5-flash는 신규 사용자에게 더 이상 제공되지 않음(구글 API 404 안내 기준) — 최신 모델로 교체
+const DEFAULT_AI_MODEL = 'gemini-3.6-flash';
+
 const DEFAULT_SUBTITLES = {
   food:   ['첫인상과 웨이팅', '메뉴 소개', '맛 평가', '가격과 서비스'],
   travel: ['첫인상', '코스와 동선', '포토스팟', '꿀팁과 정보'],
@@ -140,7 +143,7 @@ let state = {
   lastTitleOptions: [],
   aiEnabled: false,
   apiKey: '',
-  aiModel: 'gemini-2.5-flash',
+  aiModel: DEFAULT_AI_MODEL,
 };
 
 let lastAIJson = null;
@@ -763,7 +766,10 @@ function loadAISettings() {
     const saved = JSON.parse(raw);
     if (typeof saved.aiEnabled === 'boolean') state.aiEnabled = saved.aiEnabled;
     if (typeof saved.apiKey === 'string') state.apiKey = saved.apiKey;
-    if (typeof saved.aiModel === 'string' && saved.aiModel) state.aiModel = saved.aiModel;
+    if (typeof saved.aiModel === 'string' && saved.aiModel) {
+      // 예전 기본값(gemini-2.5-flash)이 저장돼 있으면 최신 기본 모델로 자동 승격
+      state.aiModel = saved.aiModel === 'gemini-2.5-flash' ? DEFAULT_AI_MODEL : saved.aiModel;
+    }
   } catch (e) { /* 무시 */ }
 }
 
@@ -968,7 +974,7 @@ async function generateWithAI() {
   const btn = document.getElementById('generateBtn');
   const original = btn.textContent;
   btn.disabled = true;
-  const model = state.aiModel || 'gemini-2.5-flash';
+  const model = state.aiModel || DEFAULT_AI_MODEL;
 
   try {
     btn.textContent = '🔎 관련 정보 검색 중...';
@@ -1062,6 +1068,26 @@ function bindForm() {
 
   document.getElementById('photoAddInput').onchange = (e) => { addPhotos(e.target.files); e.target.value = ''; };
 
+  const photoDropZone = document.getElementById('photoDropZone');
+  ['dragenter', 'dragover'].forEach((evt) => {
+    photoDropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      photoDropZone.classList.add('drag-over');
+    });
+  });
+  ['dragleave', 'drop'].forEach((evt) => {
+    photoDropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      photoDropZone.classList.remove('drag-over');
+    });
+  });
+  photoDropZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length) addPhotos(files);
+  });
+
   document.querySelectorAll('.star-btn').forEach((btn) => {
     btn.onclick = () => {
       const v = Number(btn.dataset.star);
@@ -1108,7 +1134,7 @@ function bindForm() {
   };
   const apiKeyInput = document.getElementById('apiKeyInput');
   apiKeyInput.oninput = (e) => { state.apiKey = e.target.value.trim(); saveAISettings(); };
-  document.getElementById('aiModelInput').oninput = (e) => { state.aiModel = e.target.value.trim() || 'gemini-2.5-flash'; saveAISettings(); };
+  document.getElementById('aiModelInput').oninput = (e) => { state.aiModel = e.target.value.trim() || DEFAULT_AI_MODEL; saveAISettings(); };
   document.getElementById('toggleKeyVisible').onclick = () => {
     apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
   };

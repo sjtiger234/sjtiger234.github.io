@@ -89,9 +89,9 @@
         <label class="field-label">사진</label>
         <span class="photo-count" id="photoCount"></span>
       </div>
-      <div class="photo-zone">
+      <div class="photo-zone" id="photoDropZone">
         <label class="photo-add-btn">
-          📷 사진 추가 (여러 장 한 번에 선택 가능)
+          📷 사진 추가 (여러 장 한 번에 선택 가능, 또는 여기로 끌어다 놓기)
           <input type="file" accept="image/*" multiple hidden id="photoAddInput">
         </label>
         <div class="photo-thumbs" id="photoThumbs"></div>
@@ -145,7 +145,7 @@
         </div>
         <div class="field-group">
           <label class="field-label" for="aiModelInput">모델명 (고급, 보통 변경 불필요)</label>
-          <input type="text" id="aiModelInput" placeholder="gemini-2.5-flash">
+          <input type="text" id="aiModelInput" placeholder="gemini-3.6-flash">
         </div>
       </div>
     </div>
@@ -202,7 +202,7 @@
 
 <footer class="tool-footer">
   <p>이 도구는 입력하신 메모를 자연스러운 문장으로 다듬고, 사진을 본문 흐름에 맞게 배치해주는 보조 도구예요. 생성된 글은 붙여넣기 전에 한 번 더 읽어보고 다듬어 주세요.</p>
-  <p class="version-tag">버전: 2026-08-24-v10 (이 숫자가 최신인지 확인해보세요)</p>
+  <p class="version-tag">버전: 2026-08-24-v11 (이 숫자가 최신인지 확인해보세요)</p>
 </footer>
 
 <script src="app.js"></script>

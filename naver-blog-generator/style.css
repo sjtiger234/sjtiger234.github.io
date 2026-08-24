@@ -275,6 +275,7 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent-border);
 
 /* ---------- 푸터 ---------- */
 .tool-footer { max-width: 1180px; margin: 0 auto 40px; padding: 0 20px; text-align: center; color: var(--text-3); font-size: .78rem; }
+.version-tag { margin-top: 6px; font-family: var(--mono, monospace); opacity: .6; }
 
 /* ---------- 반응형 ---------- */
 @media (max-width: 900px) {

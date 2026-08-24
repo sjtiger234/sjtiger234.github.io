@@ -978,9 +978,12 @@ function bindForm() {
     if (state.aiEnabled && state.apiKey.trim()) {
       generateWithAI();
     } else {
-      if (state.aiEnabled && !state.apiKey.trim()) {
-        flashStatus('⚠️ AI 토글은 켜져 있지만 API 키가 비어 있어서 규칙 기반으로 생성했어요. 위쪽 "Gemini API 키" 칸을 채워주세요.', { persist: true });
-      }
+      const proceed = confirm(
+        state.aiEnabled
+          ? 'AI 토글은 켜져 있지만 API 키가 비어 있어요.\n\n이 상태로 계속하면 정형 문구가 섞인 "규칙 기반 초안"이 생성됩니다.\n\n계속할까요? (취소를 누르고 "Gemini API 키" 칸을 채운 뒤 다시 시도하시면 AI로 생성됩니다)'
+          : '지금 "AI로 문장 다듬기"가 꺼져 있어요.\n\n이 상태로 계속하면 정형 문구가 섞인 "규칙 기반 초안"이 생성됩니다. (실제 방문 정보 검색·자연스러운 문장은 반영되지 않아요)\n\n계속할까요? (취소를 누르고 위쪽 "✨ AI로 문장 다듬기" 체크박스를 켠 뒤 Gemini 키를 입력하시면 AI로 생성됩니다)'
+      );
+      if (!proceed) return;
       renderPreview();
     }
     scrollToPreview();

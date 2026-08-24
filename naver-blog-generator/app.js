@@ -213,15 +213,24 @@ function escapeAttr(str = '') {
 }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function splitBullets(text) {
-  return text.split(/\n|,|·/).map((s) => s.trim()).filter(Boolean);
+  // 줄바꿈 기준으로만 나눈다. 문장 안의 쉼표(예: "위치, 운영시간, 입장료")까지
+  // 잘라버리면 문장이 토막나므로 쉼표는 구분자로 쓰지 않는다.
+  return text.split(/\n+/).map((s) => s.trim()).filter(Boolean);
 }
 function ensureSentence(fragment, category) {
-  const endsWithFinal = /[.!?…]$/.test(fragment) || /(다|요|음|함)$/.test(fragment.replace(/[.!?]$/, ''));
-  if (endsWithFinal) {
-    return /[.!?…]$/.test(fragment) ? fragment : fragment + '.';
+  const trimmed = fragment.trim();
+  // 이미 문장처럼 길거나 한국어 종결어미로 끝나면 그대로 두고 마침표만 보정한다.
+  // 짧은 키워드성 조각일 때만 정형 문구로 감싼다 (그래야 "~했는데" 같은 접속형 문장이
+  // 엉뚱한 문구와 뒤섞여 깨지는 걸 막을 수 있다).
+  const endsWithPunct = /[.!?…]$/.test(trimmed);
+  const looksLikeSentence = trimmed.length >= 10
+    || endsWithPunct
+    || /(다|요|음|함|까|죠|네요|어요|아요|였다|했다|입니다|습니다)$/.test(trimmed.replace(/[.!?…]$/, ''));
+  if (looksLikeSentence) {
+    return endsWithPunct ? trimmed : trimmed + '.';
   }
   const wrapper = pick(WRAPPERS[category]);
-  return wrapper(fragment);
+  return wrapper(trimmed);
 }
 function splitIntoChunks(items, n) {
   if (n <= 0) return [];
@@ -492,8 +501,23 @@ function blockTextLength(b) {
   return 0;
 }
 
+const MODE_INDICATOR_MAP = {
+  'ai-researched': { text: '🔎 현재 결과: AI 검색·리서치 기반으로 작성됨', cls: 'mode-ai' },
+  'ai': { text: '✨ 현재 결과: AI 다듬기 적용됨 (검색 없이 메모만 사용)', cls: 'mode-ai' },
+  'template': { text: '📝 현재 결과: 규칙 기반 초안 (AI 미사용 — 정형 문구가 섞여 있어요)', cls: '' },
+};
+
+function updateModeIndicator(post) {
+  const el = document.getElementById('modeIndicator');
+  if (!el) return;
+  const info = MODE_INDICATOR_MAP[post.source] || MODE_INDICATOR_MAP.template;
+  el.textContent = info.text;
+  el.className = 'mode-indicator' + (info.cls ? ' ' + info.cls : '');
+}
+
 function renderPostToDom(post) {
   lastPost = post;
+  updateModeIndicator(post);
   const el = document.getElementById('previewArticle');
 
   const titleChoices = post.titleOptions.map((t, i) => `
@@ -651,12 +675,12 @@ function downloadHtml() {
 }
 
 let statusTimer = null;
-function flashStatus(msg) {
+function flashStatus(msg, { persist = false } = {}) {
   const el = document.getElementById('statusMsg');
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => el.classList.remove('show'), 4000);
+  if (!persist) statusTimer = setTimeout(() => el.classList.remove('show'), 4000);
 }
 
 /* ---------- 임시 저장 (텍스트만, 사진 제외) ---------- */
@@ -871,11 +895,11 @@ async function generateWithAI() {
       const json = parseAIJson(fallback.text);
       lastAIJson = json;
       renderAIPost(json, 'ai');
-      flashStatus(`검색 없이 메모만으로 문장을 다듬었어요. (검색 실패 사유: ${searchErr.message})`);
+      flashStatus(`검색 없이 메모만으로 문장을 다듬었어요. (검색 실패 사유: ${searchErr.message})`, { persist: true });
     } catch (fallbackErr) {
       lastAIJson = null;
       renderPreview();
-      flashStatus(`AI 다듬기에 실패해 규칙 기반 초안을 표시했어요. (${fallbackErr.message})`);
+      flashStatus(`⚠️ AI 다듬기에 실패해 규칙 기반 초안을 표시했어요. (${fallbackErr.message})`, { persist: true });
     }
   } finally {
     btn.disabled = false;
@@ -951,8 +975,14 @@ function bindForm() {
 
   document.getElementById('generateBtn').onclick = () => {
     state.chosenTitleIndex = 0;
-    if (state.aiEnabled && state.apiKey.trim()) generateWithAI();
-    else renderPreview();
+    if (state.aiEnabled && state.apiKey.trim()) {
+      generateWithAI();
+    } else {
+      if (state.aiEnabled && !state.apiKey.trim()) {
+        flashStatus('⚠️ AI 토글은 켜져 있지만 API 키가 비어 있어서 규칙 기반으로 생성했어요. 위쪽 "Gemini API 키" 칸을 채워주세요.', { persist: true });
+      }
+      renderPreview();
+    }
     scrollToPreview();
   };
   document.getElementById('templateOnlyBtn').onclick = () => { state.chosenTitleIndex = 0; renderPreview(); scrollToPreview(); };

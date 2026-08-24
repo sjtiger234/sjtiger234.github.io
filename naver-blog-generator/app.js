@@ -387,7 +387,8 @@ function generatePost(s) {
     .replace('{companion}', companionPhrase || (category === 'food' ? '홀로 ' : ''))
     .replace('{place}', place)
     .replace('{region}', region || '요즘 핫한 동네')
-    .replace('{keyword}', keyword);
+    .replace('{keyword}', keyword)
+    .replace(/^[,.\s]+/, '');
   const introParas = finalizeIntro(s, [opener.replace(/\s+/g, ' ').trim(), pick(INTRO_CLOSERS[category])]);
 
   const titleOptions = buildTitleOptions(s);
@@ -504,6 +505,7 @@ function blockTextLength(b) {
 const MODE_INDICATOR_MAP = {
   'ai-researched': { text: '🔎 현재 결과: AI 검색·리서치 기반으로 작성됨', cls: 'mode-ai' },
   'ai': { text: '✨ 현재 결과: AI 다듬기 적용됨 (검색 없이 메모만 사용)', cls: 'mode-ai' },
+  'claude-manual': { text: '🤖 현재 결과: Claude 붙여넣기 기반으로 작성됨', cls: 'mode-ai' },
   'template': { text: '📝 현재 결과: 규칙 기반 초안 (AI 미사용 — 정형 문구가 섞여 있어요)', cls: '' },
 };
 
@@ -551,6 +553,7 @@ function renderPostToDom(post) {
   const sourceBadgeMap = {
     'ai-researched': '<span class="source-badge ai">🔎 AI 검색·리서치 기반 작성</span>',
     'ai': '<span class="source-badge ai">✨ AI 다듬기 적용 (검색 없음)</span>',
+    'claude-manual': '<span class="source-badge ai">🤖 Claude 붙여넣기 기반</span>',
     'template': '<span class="source-badge">규칙 기반 초안</span>',
   };
   const sourceBadge = sourceBadgeMap[post.source] || sourceBadgeMap.template;
@@ -830,8 +833,63 @@ ${JSON.stringify(input, null, 2)}
 (facts/list는 해당 내용이 있을 때만 넣고, 없으면 필드 자체를 생략하세요)`;
 }
 
+function buildClaudePrompt(s) {
+  const input = summarizeInput(s);
+  return `당신은 네이버 블로그에 ${CATEGORY_LABEL[s.category]}를 올리는 블로거입니다. 아래 정보를 바탕으로 실제 경험을 진솔하고 상세하게 전달하는 한국어 블로그 글을 작성해주세요.
+
+웹 검색이 가능하다면, 아래 장소·공연·인물에 대한 실제 정보(정확한 주소, 전화번호, 영업시간·공연일시, 가격, 관련 인물·단체의 이력 등)를 찾아서 반영해주세요. 검색이 불가능한 상황이라면 확인되지 않은 구체적 사실은 지어내지 말고 아래 입력 정보만으로 작성하세요.
+
+작성 원칙:
+${WRITING_PRINCIPLES}
+
+입력 정보:
+${JSON.stringify(input, null, 2)}
+
+아래 JSON 형식으로 응답해주세요 (코드블록으로 감싸도 되고, 앞뒤에 설명을 조금 덧붙여도 괜찮습니다. JSON 부분만 정확한 형식이면 됩니다):
+{
+  "title": "네이버 검색 노출에 최적화된 제목 (25~40자 내외)",
+  "titleAlternatives": ["대체 제목1", "대체 제목2"],
+  "intro": ["도입부 문단1"],
+  "sections": [
+    { "subtitle": "기본 정보", "facts": [{"label": "주소", "value": "..."}, {"label": "영업시간", "value": "..."}] },
+    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2", "문단3"] },
+    { "subtitle": "소제목", "list": ["항목1", "항목2"], "paragraphs": ["문단1"] }
+  ],
+  "summary": ["총평 문단1", "총평 문단2"],
+  "tags": ["태그1", "태그2"]
+}
+(facts/list는 해당 내용이 있을 때만 넣고, 없으면 필드 자체를 생략하세요)`;
+}
+
+async function copyClaudePrompt() {
+  const prompt = buildClaudePrompt(state);
+  try {
+    await navigator.clipboard.writeText(prompt);
+    flashStatus('클로드용 프롬프트를 복사했어요. claude.ai(또는 이 대화창)에 붙여넣고 답변을 받아온 뒤, 아래 칸에 붙여넣고 "가져오기"를 눌러주세요.', { persist: true });
+  } catch (e) {
+    flashStatus('복사에 실패했어요. 브라우저 권한을 확인해주세요.');
+  }
+}
+
+function importClaudeResult() {
+  const raw = document.getElementById('claudeResultInput').value.trim();
+  if (!raw) {
+    flashStatus('붙여넣은 내용이 없어요. 클로드의 답변 전체를 붙여넣어 주세요.', { persist: true });
+    return;
+  }
+  try {
+    const json = parseAIJson(raw);
+    lastAIJson = json;
+    renderAIPost(json, 'claude-manual');
+    flashStatus('클로드 답변을 가져와서 반영했어요. 사진 배치와 내용을 확인해주세요.');
+    scrollToPreview();
+  } catch (err) {
+    flashStatus(`가져오기에 실패했어요: ${err.message}. 클로드 답변에 있는 JSON 부분이 잘리지 않았는지 확인해주세요.`, { persist: true });
+  }
+}
+
 async function callGeminiApi(apiKey, model, prompt, { useSearch = false, jsonMode = false } = {}) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
   const body = {
     contents: [{ role: 'user', parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.9, maxOutputTokens: 8192 },
@@ -841,12 +899,15 @@ async function callGeminiApi(apiKey, model, prompt, { useSearch = false, jsonMod
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
     let detail = '';
     try { detail = (await res.json()).error?.message || ''; } catch (e) { /* 무시 */ }
+    if (res.status === 401 && apiKey.trim().startsWith('AQ.')) {
+      throw new Error('구글이 최근 발급하는 "AQ."로 시작하는 새 형식 API 키가 현재 구글 쪽 버그로 REST 요청을 거부하고 있어요(다수 보고된 알려진 이슈). 이 도구의 문제가 아니라 구글 쪽에서 해결해야 하는 문제입니다. AI Studio에서 Standard 키가 있는지 확인하거나, 다른 프로젝트로 새로 발급해보세요.');
+    }
     throw new Error(`Gemini API 오류 (${res.status})${detail ? ': ' + detail : ''}`);
   }
   const data = await res.json();
@@ -1020,6 +1081,9 @@ function bindForm() {
     saveAISettings();
     flashStatus('저장된 API 키를 삭제했어요.');
   };
+
+  document.getElementById('copyClaudePromptBtn').onclick = copyClaudePrompt;
+  document.getElementById('importClaudeResultBtn').onclick = importClaudeResult;
 }
 
 function switchMobileTab(tab) {

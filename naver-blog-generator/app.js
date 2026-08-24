@@ -134,8 +134,8 @@ let state = {
   summaryText: '',
   photos: [],
   summaryNotes: '',
-  nickname: '',
-  signoffText: '',
+  nickname: '멋진 나그네',
+  signoffText: '다음에도 재미있는 여행. 맛집. 공연 후기로 다시 찾아올께요.^^',
   chosenTitleIndex: 0,
   lastTitleOptions: [],
   aiEnabled: false,
@@ -300,7 +300,7 @@ function finalizeIntro(s, introParas) {
 }
 function finalizeSummary(s, summarySentences) {
   const signoff = s.signoffText.trim() || pick(SIGNOFF_POOL[s.category]);
-  return [...summarySentences, signoff, `이것은 ${CATEGORY_LABEL[s.category]}입니다.`];
+  return [...summarySentences, signoff];
 }
 
 /* ---------- 제목 / 태그 생성 ---------- */
@@ -526,7 +526,7 @@ function renderBlockHtml(b, sectionSubtitle) {
   if (b.type === 'list') {
     return `<ul class="content-list">${b.items.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`;
   }
-  return `<figure><img src="${b.photo.dataUrl}" alt="${escapeAttr(b.photo.caption || sectionSubtitle)}">${b.photo.caption ? `<figcaption>${escapeHtml(b.photo.caption)}</figcaption>` : ''}</figure>`;
+  return `<figure><img src="${b.photo.dataUrl}" alt="${escapeAttr(sectionSubtitle)}"></figure>`;
 }
 
 function blockTextLength(b) {
@@ -634,7 +634,7 @@ function buildPlainText(post) {
       if (b.type === 'text') lines.push(b.text);
       else if (b.type === 'infobox') b.facts.forEach((f) => lines.push(`${f.label}: ${f.value}`));
       else if (b.type === 'list') b.items.forEach((t) => lines.push(`- ${t}`));
-      else { photoCounter++; lines.push(`[사진 ${photoCounter}${b.photo.caption ? ' - ' + b.photo.caption : ''}]`); }
+      else { photoCounter++; lines.push(`[사진 ${photoCounter}]`); }
     });
     lines.push('');
   });
@@ -654,7 +654,7 @@ function buildHtmlFragment(post) {
       if (b.type === 'text') return `<p>${escapeHtml(b.text)}</p>`;
       if (b.type === 'infobox') return `<p>${b.facts.map((f) => `<b>${escapeHtml(f.label)}</b>: ${escapeHtml(f.value)}`).join('<br>')}</p>`;
       if (b.type === 'list') return `<p>${b.items.map((t) => `• ${escapeHtml(t)}`).join('<br>')}</p>`;
-      return `<p><img src="${b.photo.dataUrl}" alt="${escapeAttr(b.photo.caption || sec.subtitle)}" style="max-width:100%;">${b.photo.caption ? `<br><i>${escapeHtml(b.photo.caption)}</i>` : ''}</p>`;
+      return `<p><img src="${b.photo.dataUrl}" alt="${escapeAttr(sec.subtitle)}" style="max-width:100%;"></p>`;
     }).join('')}
   `).join('');
   const stars = post.rating ? `<p>${'★'.repeat(post.rating)}${'☆'.repeat(5 - post.rating)}</p>` : '';
@@ -791,7 +791,8 @@ const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인�
 - 코스 옵션, 프로그램/세트리스트, 방문 팁처럼 목록으로 정리하는 게 자연스러운 내용은 해당 섹션의 list 필드에 배열로 담을 것
 - 섹션당 문단(paragraphs)은 2~4개, 문단당 2~4문장 정도로, 취재된 실제 정보(주소·영업시간·가격대·메뉴명·특징 등)를 구체적으로 담아 밀도 있게 쓸 것
 - photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것
-- photoCaptions는 사용자가 실제로 찍은 사진에 붙인 설명이다. 이 목록에 나온 소재(예: "은각사 입구", "정원 풍경")는 관련 있는 소제목의 본문에서 최소 한 번씩 구체적으로 언급해서, 나중에 그 사진이 해당 문단 옆에 자동 배치됐을 때 내용과 사진이 자연스럽게 맞아떨어지도록 할 것`;
+- photoCaptions는 사용자가 실제로 찍은 사진에 붙인 설명이다. 이 목록에 나온 소재(예: "은각사 입구", "정원 풍경")는 관련 있는 소제목의 본문에서 최소 한 번씩 구체적으로 언급해서, 나중에 그 사진이 해당 문단 옆에 자동 배치됐을 때 내용과 사진이 자연스럽게 맞아떨어지도록 할 것
+- 문장은 "~했다/~였다/~한다" 같은 담담한 서술체를 기본 축으로 쓰되, 가끔 "~했어요/~좋았다" 식으로 부드러운 문장을 자연스럽게 섞어서 실제 파워블로거 글 같은 편안한 리듬을 만들 것. 한 문장 안에서 서로 다른 종결어미가 어색하게 이어 붙거나("~했는데는 ~였다" 같은 비문), 문장이 중간에 끊기는 일이 없도록 매끄럽게 다듬을 것`;
 
 function buildResearchPrompt(s) {
   const input = summarizeInput(s);

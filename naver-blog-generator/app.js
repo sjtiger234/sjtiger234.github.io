@@ -616,8 +616,8 @@ function renderPostToDom(post) {
     <div class="title-choices">${titleChoices}</div>
     <h1 class="post-title">${escapeHtml(post.title)}</h1>
     <div class="post-meta">${sourceBadge} ${escapeHtml(CATEGORY_LABEL[state.category])}${state.region ? ' · ' + escapeHtml(state.region) : ''}${state.date ? ' · ' + escapeHtml(state.date) : ''} · 본문 약 ${charCount}자</div>
-    ${tocHtml}
     <div class="post-intro">${post.introParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}</div>
+    ${tocHtml}
     ${sectionsHtml}
     ${summaryHtml}
     ${tagsHtml}
@@ -636,13 +636,13 @@ function renderPostToDom(post) {
 function buildPlainText(post) {
   const lines = [];
   lines.push(post.title, '');
+  post.introParas.forEach((p) => lines.push(p));
+  lines.push('');
   if (post.toc.length) {
     lines.push('[목차]');
     post.toc.forEach((t, i) => lines.push(`${i + 1}. ${t}`));
     lines.push('');
   }
-  post.introParas.forEach((p) => lines.push(p));
-  lines.push('');
   let photoCounter = 0;
   post.sections.forEach((sec, i) => {
     lines.push(`${i + 1}. ${sec.subtitle}`, '');
@@ -676,7 +676,7 @@ function buildHtmlFragment(post) {
   const stars = post.rating ? `<p>${'★'.repeat(post.rating)}${'☆'.repeat(5 - post.rating)}</p>` : '';
   const summaryHtml = `<h2>${post.sections.length + 1}. 총평</h2>${stars}${post.summarySentences.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}`;
   const tagsHtml = `<p>${post.tags.map((t) => `#${escapeHtml(t)}`).join(' ')}</p>`;
-  return `<h1>${escapeHtml(post.title)}</h1>${tocHtml}${introHtml}${sectionsHtml}${summaryHtml}${tagsHtml}`;
+  return `<h1>${escapeHtml(post.title)}</h1>${introHtml}${tocHtml}${sectionsHtml}${summaryHtml}${tagsHtml}`;
 }
 
 async function copyRich() {

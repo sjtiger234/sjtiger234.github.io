@@ -248,6 +248,11 @@ function splitBullets(text) {
   // 잘라버리면 문장이 토막나므로 쉼표는 구분자로 쓰지 않는다.
   return text.split(/\n+/).map((s) => s.trim()).filter(Boolean);
 }
+function ensureTrailingPeriod(str) {
+  const trimmed = (str || '').trim();
+  if (!trimmed) return trimmed;
+  return /[.!?…~]$/.test(trimmed) ? trimmed : trimmed + '.';
+}
 function ensureSentence(fragment, category) {
   const trimmed = fragment.trim();
   // 이미 문장처럼 길거나 한국어 종결어미로 끝나면 그대로 두고 마침표만 보정한다.
@@ -548,7 +553,7 @@ function composeFromAI(s, ai, sourceLabel = 'ai') {
   const title = titleOptions[Math.min(s.chosenTitleIndex, titleOptions.length - 1)];
 
   const introParas = finalizeIntro(s, Array.isArray(ai.intro) && ai.intro.length
-    ? ai.intro.filter(Boolean)
+    ? ai.intro.filter(Boolean).map(ensureTrailingPeriod)
     : [pick(INTRO_OPENERS[category]).replace(/\{[a-z]+\}/g, '').replace(/\s+/g, ' ').trim(), pick(INTRO_CLOSERS[category])]);
 
   const aiSectionsRaw = Array.isArray(ai.sections)
@@ -566,10 +571,10 @@ function composeFromAI(s, ai, sourceLabel = 'ai') {
         if (facts.length) blocks.push({ type: 'infobox', facts });
       }
       if (nonEmptyArr(aiSec.list)) {
-        const items = aiSec.list.filter(Boolean);
+        const items = aiSec.list.filter(Boolean).map(ensureTrailingPeriod);
         if (items.length) blocks.push({ type: 'list', items });
       }
-      const paragraphs = nonEmptyArr(aiSec.paragraphs) ? aiSec.paragraphs.filter(Boolean) : [];
+      const paragraphs = nonEmptyArr(aiSec.paragraphs) ? aiSec.paragraphs.filter(Boolean).map(ensureTrailingPeriod) : [];
       blocks.push(...distributeIntoBlocks(paragraphs, photoChunks[i] || []));
       return { subtitle, blocks };
     }).filter((sec) => sec.blocks.length > 0);
@@ -579,7 +584,7 @@ function composeFromAI(s, ai, sourceLabel = 'ai') {
 
   let summarySentences;
   if (Array.isArray(ai.summary) && ai.summary.length) {
-    summarySentences = ai.summary.filter(Boolean);
+    summarySentences = ai.summary.filter(Boolean).map(ensureTrailingPeriod);
   } else {
     const bullets = splitBullets(s.summaryNotes);
     summarySentences = bullets.map((b, i) => (i === 0 ? '' : pick(CONNECTORS)) + ensureSentence(b, category));
@@ -657,7 +662,7 @@ function renderPostToDom(post) {
     </label>`).join('');
 
   const tocHtml = post.toc.length
-    ? `<div class="toc-box"><div class="toc-heading">목차</div><ol>${post.toc.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ol></div>`
+    ? `<div class="toc-box"><div class="toc-heading">- 목차 -</div><ol>${post.toc.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ol></div>`
     : '';
 
   const sectionsHtml = post.sections.map((sec, i) => `
@@ -717,7 +722,7 @@ function buildPlainText(post) {
   post.introParas.forEach((p) => lines.push(p));
   lines.push('');
   if (post.toc.length) {
-    lines.push('[목차]');
+    lines.push('- 목차 -');
     post.toc.forEach((t, i) => lines.push(`${i + 1}. ${t}`));
     lines.push('');
   }
@@ -740,14 +745,14 @@ function buildPlainText(post) {
 }
 
 function buildHtmlFragment(post) {
-  const tocHtml = post.toc.length ? `<p><b>[목차]</b><br>${post.toc.map((t, i) => `${i + 1}. ${escapeHtml(t)}`).join('<br>')}</p>` : '';
+  const tocHtml = post.toc.length ? `<p style="text-align:center;"><b>- 목차 -</b></p><p>${post.toc.map((t, i) => `${i + 1}. ${escapeHtml(t)}`).join('<br>')}</p>` : '';
   const introHtml = post.introParas.map((p) => `<p>${escapeHtml(p)}</p>`).join('');
   const sectionsHtml = post.sections.map((sec, i) => `
     <h2>${i + 1}. ${escapeHtml(sec.subtitle)}</h2>
     ${sec.blocks.map((b) => {
       if (b.type === 'text') return `<p>${escapeHtml(b.text)}</p>`;
       if (b.type === 'infobox') return `<p>${b.facts.map((f) => `<b>${escapeHtml(f.label)}</b>: ${escapeHtml(f.value)}`).join('<br>')}</p>`;
-      if (b.type === 'list') return `<p>${b.items.map((t) => `• ${escapeHtml(t)}`).join('<br>')}</p>`;
+      if (b.type === 'list') return `<p>${b.items.map((t) => `- ${escapeHtml(t)}`).join('<br>')}</p>`;
       return `<p><img src="${b.photo.dataUrl}" alt="${escapeAttr(sec.subtitle)}" style="max-width:100%;"></p>`;
     }).join('')}
   `).join('');
@@ -886,7 +891,8 @@ const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인�
 - 전체 분량에는 엄격한 글자수 제한을 두지 않는다. 취재 노트와 overallNotes가 풍부하면 소제목을 6~9개까지 늘려 실제 파워블로거의 후기처럼 충실하고 상세하게 쓰고, 정보가 적으면 2~4개 정도로 간결하게 쓸 것
 - 첫 소제목은 가능하면 "기본 정보"에 해당하는 섹션으로 구성해서, 그 섹션의 facts 필드에 확인된 사실을 key-value로 정리할 것 — 맛집/여행/공연은 주소·전화번호·영업시간/공연일시·가격·정기휴무 등, 제품은 제품명·모델명·가격·주요 스펙(사양)·구성품·제조사/판매처 등. 확인된 사실이 없으면 이 섹션은 생략할 것
 - 가능하면 장소·인물·단체의 배경(이력, 유명해진 계기, 역사 등)을 다루는 소제목을 하나 포함할 것 (취재 노트에 근거가 있을 때만. 근거 없이 지어내지 말 것)
-- 코스 옵션, 프로그램/세트리스트, 방문 팁처럼 목록으로 정리하는 게 자연스러운 내용은 해당 섹션의 list 필드에 배열로 담을 것
+- 코스 옵션, 프로그램/세트리스트, 방문 팁처럼 목록으로 정리하는 게 자연스러운 내용은 해당 섹션의 list 필드에 배열로 담을 것. 항목이 "용량/구간/단계"처럼 이름과 설명으로 나뉘는 내용이면 "이름 : 설명 문장." 형식(콜론 앞뒤 띄어쓰기, 끝에 마침표)으로 한 항목씩 작성할 것
+- intro, paragraphs, summary, list의 모든 항목은 예외 없이 마침표(.)로 끝나야 한다. 마침표나 물음표·느낌표 없이 문장이 끝나는 경우가 없도록 마지막에 반드시 마침표를 찍을 것
 - 섹션당 문단(paragraphs)은 2~4개, 문단당 2~4문장 정도로, 취재된 실제 정보(주소·영업시간·가격대·메뉴명·특징 등)를 구체적으로 담아 밀도 있게 쓸 것
 - photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것
 - photoCaptions는 사용자가 실제로 찍은 사진에 붙인 설명이다. 이 목록에 나온 소재(예: "은각사 입구", "정원 풍경")는 관련 있는 소제목의 본문에서 최소 한 번씩 구체적으로 언급해서, 나중에 그 사진이 해당 문단 옆에 자동 배치됐을 때 내용과 사진이 자연스럽게 맞아떨어지도록 할 것

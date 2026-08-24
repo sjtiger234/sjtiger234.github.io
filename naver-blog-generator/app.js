@@ -297,9 +297,22 @@ function assignPhotosToSections(photos, sections) {
 function buildGreetingLine(s) {
   return s.nickname.trim() ? `안녕하세요? ${s.nickname.trim()}입니다.` : '';
 }
+
+// AI가 지침을 무시하고 자체 인사말("안녕하세요, ~입니다")을 문단 앞에 넣는 경우가 있어
+// 별도로 붙이는 인사말과 중복되지 않도록 앞부분에서 제거한다.
+function stripDuplicateGreeting(paragraph) {
+  return paragraph
+    .replace(/^안녕하세요[!?,.~\s]*/, '')
+    .replace(/^[^.!?\n]{0,20}(입니다|이에요|예요)\.?\s*/, '')
+    .trim();
+}
+
 function finalizeIntro(s, introParas) {
   const greeting = buildGreetingLine(s);
-  return greeting ? [greeting, ...introParas] : introParas;
+  if (!greeting || introParas.length === 0) return greeting ? [greeting, ...introParas] : introParas;
+  const firstCleaned = stripDuplicateGreeting(introParas[0]);
+  const cleanedParas = firstCleaned ? [firstCleaned, ...introParas.slice(1)] : introParas.slice(1);
+  return [greeting, ...cleanedParas];
 }
 function finalizeSummary(s, summarySentences) {
   const signoff = s.signoffText.trim() || pick(SIGNOFF_POOL[s.category]);
@@ -798,6 +811,7 @@ const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인�
 - 섹션당 문단(paragraphs)은 2~4개, 문단당 2~4문장 정도로, 취재된 실제 정보(주소·영업시간·가격대·메뉴명·특징 등)를 구체적으로 담아 밀도 있게 쓸 것
 - photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것
 - photoCaptions는 사용자가 실제로 찍은 사진에 붙인 설명이다. 이 목록에 나온 소재(예: "은각사 입구", "정원 풍경")는 관련 있는 소제목의 본문에서 최소 한 번씩 구체적으로 언급해서, 나중에 그 사진이 해당 문단 옆에 자동 배치됐을 때 내용과 사진이 자연스럽게 맞아떨어지도록 할 것
+- intro(도입부)에 "안녕하세요", "~입니다/~이에요" 같은 인사말·자기소개 문장을 넣지 말 것. 인사말은 시스템이 별도로 자동으로 붙이므로, intro는 인사말 없이 바로 방문/관람 이야기로 시작할 것
 - [가장 중요, 반드시 지킬 것] 모든 문장은 예외 없이 "~요/~어요/~았어요/~였어요"(해요체) 또는 "~습니다/~입니다/~였습니다"(합쇼체)로 끝나야 한다. "~다."로 끝나는 문장(반말 서술체, 평서체)은 단 한 문장도 있으면 안 된다.
   절대 쓰면 안 되는 종결: "~였다.", "~했다.", "~있다.", "~없다.", "~한다.", "~된다.", "~같다.", "~이다.", "~보인다.", "~들었다.", "~났다.", "~간직하고 있다.", "~평가받는다.", "~이어진다.", "~붙었다고 한다."
   반드시 이렇게 바꿀 것(예시): "다녀온 적이 있다." → "다녀온 적이 있어요.” / "남아 있다." → "남아 있어요." / "지쇼지다." → "지쇼지예요." / "이동했다." → "이동했어요." / "올라가야 한다." → "올라가야 해요." / "지루하지 않았다." → "지루하지 않았어요." / "목조 건물이다." → "목조 건물이에요." / "들었다." → "들었어요." / "조용했다." → "조용했어요." / "좋았다." → "좋았어요." / "나온다." → "나와요." / "이어진다." → "이어져요." / "곳이다." → "곳이에요." / "들었다." → "들었어요."

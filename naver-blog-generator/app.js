@@ -376,12 +376,12 @@ async function buildImagePartsForAnalysis(photos) {
   return resized.map(dataUrlToInlinePart).filter(Boolean);
 }
 
-function buildGreetingLine(s) {
-  return s.nickname.trim() ? `안녕하세요? ${s.nickname.trim()}입니다.` : '';
+function buildSignatureLine(s) {
+  return s.nickname.trim() ? `- ${s.nickname.trim()} -` : '';
 }
 
 // AI가 지침을 무시하고 자체 인사말("안녕하세요, ~입니다")을 문단 앞에 넣는 경우가 있어
-// 별도로 붙이는 인사말과 중복되지 않도록 앞부분에서 제거한다.
+// 도입부 첫 문장이 방문자가 바로 내용을 파악할 수 있는 정리된 문장으로 시작하도록 제거한다.
 function stripDuplicateGreeting(paragraph) {
   return paragraph
     .replace(/^안녕하세요[!?,.~\s]*/, '')
@@ -390,18 +390,27 @@ function stripDuplicateGreeting(paragraph) {
 }
 
 function finalizeIntro(s, introParas) {
-  const greeting = buildGreetingLine(s);
-  if (!greeting || introParas.length === 0) return greeting ? [greeting, ...introParas] : introParas;
+  if (introParas.length === 0) return introParas;
   const firstCleaned = stripDuplicateGreeting(introParas[0]);
-  const cleanedParas = firstCleaned ? [firstCleaned, ...introParas.slice(1)] : introParas.slice(1);
-  return [greeting, ...cleanedParas];
+  return firstCleaned ? [firstCleaned, ...introParas.slice(1)] : introParas.slice(1);
 }
 function finalizeSummary(s, summarySentences) {
   const signoff = s.signoffText.trim() || pick(SIGNOFF_POOL[s.category]);
-  return [...summarySentences, signoff];
+  const signature = buildSignatureLine(s);
+  return signature ? [...summarySentences, signoff, signature] : [...summarySentences, signoff];
 }
 
 /* ---------- 제목 / 태그 생성 ---------- */
+
+const MAX_TITLE_CHARS = 35;
+
+function truncateTitle(title) {
+  const t = (title || '').replace(/\s+/g, ' ').trim();
+  if (t.length <= MAX_TITLE_CHARS) return t;
+  const cut = t.slice(0, MAX_TITLE_CHARS);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 10 ? cut.slice(0, lastSpace) : cut).trim();
+}
 
 function buildTitleOptions(s) {
   const place = s.place || '이곳';
@@ -411,27 +420,27 @@ function buildTitleOptions(s) {
   const kw2 = kws[1] || '';
   const bank = {
     food: [
-      `${region}${place} · ${kw} 제대로 하는 맛집 후기`,
-      `${place} 리얼 후기 | ${kw}${kw2 ? ' & ' + kw2 : ''}`,
-      `${(s.region || '').trim()} ${place}, 인생 맛집 등극 (${kw})`.trim(),
+      `${region}${place}, 이래서 소문났나 봐요 (${kw})`,
+      `${place} 찐후기 | ${kw}${kw2 ? ' & ' + kw2 : ''}`,
+      `${(s.region || '').trim()} ${place}, 다시 가고 싶은 이유 (${kw})`.trim(),
     ],
     travel: [
-      `${region}${place} 여행 코스 총정리 (feat. ${kw})`,
-      `${(s.region || '').trim()} ${place} 다녀온 후기 | ${kw} 스팟`.trim(),
-      `${place} 여행 브이로그 · ${kw} 완전정복`,
+      `${region}${place}, 여기 안 가면 후회해요`,
+      `${(s.region || '').trim()} ${place} 찐후기 | ${kw} 완벽 코스`.trim(),
+      `${place} 여행, ${kw} 놓치면 아까워요`,
     ],
     show: [
-      `${region}${place} 공연 후기 · ${kw}`,
-      `${place} 관람 후기, ${kw}가 남긴 여운`,
-      `${(s.region || '').trim()} ${place} | ${kw} 솔직 리뷰`.trim(),
+      `${region}${place}, 이 무대 실화인가요?`,
+      `${place} 관람 후기 | ${kw}가 남긴 여운`,
+      `${(s.region || '').trim()} ${place}, ${kw} 직접 보니`.trim(),
     ],
     product: [
-      `${place} 솔직 사용 후기 (feat. ${kw})`,
-      `${place} 리얼 리뷰 | ${kw}${kw2 ? ' & ' + kw2 : ''}`,
-      `${place} 써보고 남기는 장단점 정리 (${kw})`,
+      `${place}, 써보니 어땠을까요? (${kw})`,
+      `${place} 찐사용기 | ${kw}${kw2 ? ' & ' + kw2 : ''}`,
+      `${place} 리얼 장단점, 사기 전에 확인`,
     ],
   };
-  return bank[s.category].map((t) => t.replace(/\s+/g, ' ').trim());
+  return bank[s.category].map(truncateTitle);
 }
 
 function parseKeywords(raw) {
@@ -551,7 +560,7 @@ function composeFromAI(s, ai, sourceLabel = 'ai') {
   const category = s.category;
 
   const templateTitles = buildTitleOptions(s);
-  const aiTitles = [ai.title, ...(Array.isArray(ai.titleAlternatives) ? ai.titleAlternatives : [])].filter(Boolean);
+  const aiTitles = [ai.title, ...(Array.isArray(ai.titleAlternatives) ? ai.titleAlternatives : [])].filter(Boolean).map(truncateTitle);
   const titleOptions = Array.from(new Set([...aiTitles, ...templateTitles])).slice(0, 5);
   state.lastTitleOptions = titleOptions;
   const title = titleOptions[Math.min(s.chosenTitleIndex, titleOptions.length - 1)];
@@ -953,6 +962,7 @@ function summarizeInput(s) {
 
 const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인생 맛집" 남발 등)과 이모지 남발을 피하고, 담백하고 자연스러운 문체로 쓸 것
 - 지역·장소명·키워드를 억지스럽지 않게 자연스럽게 본문에 녹여 검색 노출에 도움이 되도록 할 것
+- title(제목)은 핵심 키워드(장소명·제품명 등)를 앞쪽에 배치해 검색에 잘 걸리면서, 동시에 궁금증을 유발하거나 시선을 확 끄는 문구로 쓸 것. "무조건 강추", "인생템", "역대급" 같은 과장 광고 문구는 피하고, 반드시 공백 포함 35자를 넘지 않을 것. titleAlternatives도 같은 기준으로 2개 더 제안할 것
 - 2026년 네이버 검색은 체류시간을 핵심 랭킹 요소로 본다. 본문(도입부+섹션+총평 합산) 분량은 최소 1,500자 이상, 가능하면 2,000~3,000자를 목표로 쓸 것. 취재 노트와 overallNotes가 풍부하면 소제목을 6~9개까지 늘려 실제 파워블로거의 후기처럼 충실하고 상세하게 쓰고, 정보가 적으면 2~4개 정도로 간결하게 쓸 것
 - 글 전체에 "~는 어땠을까요?", "~가 궁금하지 않으신가요?" 같은 궁금증을 유발하는 질문형 문장을 최소 1개는 자연스럽게 포함시켜서, 읽는 사람이 답을 확인하려고 끝까지 스크롤하게 만들 것 (억지스럽게 여러 번 넣지 말고 자연스러운 곳에 한두 번만)
 - 첫 소제목은 가능하면 "기본 정보"에 해당하는 섹션으로 구성해서, 그 섹션의 facts 필드에 확인된 사실을 key-value로 정리할 것 — 맛집/여행/공연은 주소·전화번호·영업시간/공연일시·가격·정기휴무 등, 제품은 제품명·모델명·가격·주요 스펙(사양)·구성품·제조사/판매처 등. 확인된 사실이 없으면 이 섹션은 생략할 것
@@ -962,12 +972,12 @@ const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인�
 - 섹션당 문단(paragraphs)은 2~4개, 문단당 2~4문장 정도로, 취재된 실제 정보(주소·영업시간·가격대·메뉴명·특징 등)를 구체적으로 담아 밀도 있게 쓸 것
 - photoCount는 실제 사진 배치를 위한 참고용 숫자일 뿐이니, 본문에서 "사진 1", "위 사진처럼" 같은 표현은 쓰지 말 것
 - photoCaptions는 사용자가 실제로 찍은 사진에 붙인 설명이다. 이 목록에 나온 소재(예: "은각사 입구", "정원 풍경")는 관련 있는 소제목의 본문에서 최소 한 번씩 구체적으로 언급해서, 나중에 그 사진이 해당 문단 옆에 자동 배치됐을 때 내용과 사진이 자연스럽게 맞아떨어지도록 할 것
-- intro(도입부)에 "안녕하세요", "~입니다/~이에요" 같은 인사말·자기소개 문장을 넣지 말 것. 인사말은 시스템이 별도로 자동으로 붙이므로, intro는 인사말 없이 바로 방문/관람 이야기로 시작할 것
+- intro(도입부)의 첫 문장은 "안녕하세요", "~입니다/~이에요" 같은 인사말·자기소개로 시작하지 말 것. 방문자가 글을 열자마자 무엇에 대한 글인지 바로 파악할 수 있도록, 언제·어디서·무엇을 했는지가 드러나는 정리된 문장으로 곧바로 시작할 것 (예: "{장소}에 다녀왔어요", "{제품}을 구매해서 써봤어요" 같은 형태). 자기소개·서명은 시스템이 글 맨 끝에 별도로 붙이므로 intro에는 넣지 말 것
 - 이 메시지에 실제 사진이 첨부되어 있다면, 사진을 직접 관찰해서 실제로 보이는 요소(색상, 사물, 구도, 분위기, 글자, 인테리어 등)를 관련 있는 소제목의 문장에 사실적으로 반영할 것. 사진이 첨부되지 않았거나 특정 사진과 관련 없는 내용은 사진에서 본 것처럼 지어내지 말 것
 - [가장 중요, 반드시 지킬 것] 모든 문장은 예외 없이 "~요/~어요/~았어요/~였어요"(해요체) 또는 "~습니다/~입니다/~였습니다"(합쇼체)로 끝나야 한다. "~다."로 끝나는 문장(반말 서술체, 평서체)은 단 한 문장도 있으면 안 된다.
   절대 쓰면 안 되는 종결: "~였다.", "~했다.", "~있다.", "~없다.", "~한다.", "~된다.", "~같다.", "~이다.", "~보인다.", "~들었다.", "~났다.", "~간직하고 있다.", "~평가받는다.", "~이어진다.", "~붙었다고 한다."
   반드시 이렇게 바꿀 것(예시): "다녀온 적이 있다." → "다녀온 적이 있어요.” / "남아 있다." → "남아 있어요." / "지쇼지다." → "지쇼지예요." / "이동했다." → "이동했어요." / "올라가야 한다." → "올라가야 해요." / "지루하지 않았다." → "지루하지 않았어요." / "목조 건물이다." → "목조 건물이에요." / "들었다." → "들었어요." / "조용했다." → "조용했어요." / "좋았다." → "좋았어요." / "나온다." → "나와요." / "이어진다." → "이어져요." / "곳이다." → "곳이에요." / "들었다." → "들었어요."
-  문장을 다 쓴 뒤, 마지막 글자가 "다."로 끝나는 문장이 하나라도 있는지 스스로 다시 확인하고, 있다면 전부 "~요/~습니다"체로 고쳐서 최종 답변에는 절대 남기지 말 것. 실제 파워블로거 글(예: "안녕하세요? 멋진 나그네입니다. 어제 ~보고 왔어요. ~빛이 났습니다.")은 처음부터 끝까지 이 존댓말체로만 쓰여 있다.
+  문장을 다 쓴 뒤, 마지막 글자가 "다."로 끝나는 문장이 하나라도 있는지 스스로 다시 확인하고, 있다면 전부 "~요/~습니다"체로 고쳐서 최종 답변에는 절대 남기지 말 것. 실제 파워블로거 글(예: "어제 ~보고 왔어요. ~빛이 났습니다.")은 처음부터 끝까지 이 존댓말체로만 쓰여 있다.
   단, 한쪽으로 치우치면 안 된다. "~요/~어요"체와 "~습니다/~입니다"체를 전체 글에서 대략 반반 정도 비율로, 두세 문장마다 자연스럽게 번갈아 섞어서 리듬감 있게 쓸 것 — "~요"만 계속 이어지거나 "~습니다"만 계속 이어지지 않도록 할 것.`;
 
 function buildResearchPrompt(s) {
@@ -1005,7 +1015,7 @@ ${JSON.stringify(input, null, 2)}
 
 아래 JSON 형식으로만, 다른 설명 없이 응답하세요:
 {
-  "title": "네이버 검색 노출에 최적화된 제목 (25~40자 내외)",
+  "title": "네이버 검색 노출과 클릭을 동시에 노리는, 시선을 끄는 제목 (공백 포함 반드시 35자 이내)",
   "titleAlternatives": ["대체 제목1", "대체 제목2"],
   "intro": ["도입부 문단1"],
   "sections": [
@@ -1034,7 +1044,7 @@ ${JSON.stringify(input, null, 2)}
 
 아래 JSON 형식으로만, 다른 설명 없이 응답하세요:
 {
-  "title": "네이버 검색 노출에 최적화된 제목 (25~40자 내외)",
+  "title": "네이버 검색 노출과 클릭을 동시에 노리는, 시선을 끄는 제목 (공백 포함 반드시 35자 이내)",
   "titleAlternatives": ["대체 제목1", "대체 제목2"],
   "intro": ["도입부 문단1"],
   "sections": [
@@ -1066,7 +1076,7 @@ ${JSON.stringify(input, null, 2)}
 
 아래 JSON 형식으로 응답해주세요 (코드블록으로 감싸도 되고, 앞뒤에 설명을 조금 덧붙여도 괜찮습니다. JSON 부분만 정확한 형식이면 됩니다):
 {
-  "title": "네이버 검색 노출에 최적화된 제목 (25~40자 내외)",
+  "title": "네이버 검색 노출과 클릭을 동시에 노리는, 시선을 끄는 제목 (공백 포함 반드시 35자 이내)",
   "titleAlternatives": ["대체 제목1", "대체 제목2"],
   "intro": ["도입부 문단1"],
   "sections": [
@@ -1214,6 +1224,33 @@ function loadExample() {
   saveDraft();
 }
 
+// 닉네임·서명 문구·AI 설정(API 키 등)은 유지한 채, 이번 포스팅 입력 내용만 비운다.
+// 매번 API 키를 다시 입력하지 않고도 새 글을 빠르게 시작할 수 있도록 하기 위함.
+const BLANK_POST_CONTENT = {
+  category: 'food',
+  place: '', region: '', date: '', companion: '', rating: 0,
+  keywordsRaw: '',
+  extraTagsRaw: '',
+  summaryText: '',
+  summaryNotes: '',
+  chosenTitleIndex: 0,
+  lastTitleOptions: [],
+};
+
+function resetPostContent() {
+  Object.assign(state, BLANK_POST_CONTENT, { photos: [] });
+  lastAIJson = null;
+  lastPost = null;
+  syncFormFromState();
+  document.getElementById('previewArticle').innerHTML = '';
+  document.getElementById('seoChecklist').hidden = true;
+  document.getElementById('modeIndicator').textContent = '';
+  document.getElementById('modeIndicator').className = 'mode-indicator';
+  document.getElementById('claudeResultInput').value = '';
+  saveDraft();
+  if (window.innerWidth <= 900) switchMobileTab('form');
+}
+
 /* ---------- 폼 <-> 상태 동기화 ---------- */
 
 const FIELD_LABELS = {
@@ -1318,6 +1355,10 @@ function bindForm() {
   };
   document.getElementById('templateOnlyBtn').onclick = () => { state.chosenTitleIndex = 0; renderPreview(); scrollToPreview(); };
   document.getElementById('exampleBtn').onclick = loadExample;
+  document.getElementById('newPostBtn').onclick = () => {
+    if (!confirm('작성 중인 내용을 지우고 새 글을 시작할까요? (닉네임·서명 문구·AI 설정은 그대로 유지돼요)')) return;
+    resetPostContent();
+  };
   document.getElementById('resetBtn').onclick = () => {
     if (!confirm('입력한 내용과 저장된 API 키를 모두 지울까요?')) return;
     localStorage.removeItem(DRAFT_KEY);

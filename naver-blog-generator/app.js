@@ -48,21 +48,25 @@ const INTRO_CLOSERS = {
     '오늘은 그날의 메뉴와 분위기를 하나씩 정리해보려고 해요.',
     '방문 전 궁금했던 점들, 방문 후 느낀 점까지 순서대로 담아봅니다.',
     '아래 목차 순서대로 솔직한 후기를 남겨볼게요.',
+    '과연 소문대로였을지, 아래 후기에서 하나씩 확인해보실까요?',
   ],
   travel: [
     '이번 코스와 꿀팁을 아래 순서대로 정리해봅니다.',
     '동선부터 포토스팟까지, 다녀온 순서대로 기록을 남겨봅니다.',
     '준비하시는 분들께 도움이 되길 바라며 상세히 적어봅니다.',
+    '어떤 코스로 다녀왔는지 궁금하지 않으신가요? 아래에서 하나씩 풀어볼게요.',
   ],
   show: [
     '관람 전 준비부터 공연 후 여운까지 순서대로 남겨봅니다.',
     '스포일러는 최소화하되, 느낀 감정은 최대한 담아보려고 해요.',
     '아래 목차 순서대로 솔직한 관람 후기를 적어볼게요.',
+    '실제로 본 소감이 어땠을지 궁금하시죠? 아래에서 자세히 남겨볼게요.',
   ],
   product: [
     '개봉기부터 실사용 느낌까지 순서대로 정리해봅니다.',
     '장단점을 최대한 솔직하게 담아보려고 해요.',
     '아래 목차 순서대로 사용 후기를 남겨볼게요.',
+    '실제로 써보니 어땠을지 궁금하지 않으신가요? 아래에서 솔직하게 남겨볼게요.',
   ],
 };
 
@@ -635,6 +639,68 @@ function blockTextLength(b) {
   return 0;
 }
 
+function computeCharCount(post) {
+  return post.introParas.join('').length
+    + post.sections.reduce((sum, sec) => sum + sec.blocks.reduce((s2, b) => s2 + blockTextLength(b), 0), 0)
+    + post.summarySentences.join('').length;
+}
+
+/* ---------- 네이버 SEO 체크리스트 ---------- */
+/* 2026년 기준: 체류시간이 핵심 랭킹 요소가 되면서 본문 밀도(글자수)·직접 촬영
+   사진 수·구조화(목차/기본정보)·궁금증 유발 문장 여부가 상위노출에 영향을 준다. */
+const SEO_MIN_CHARS = 1500;
+const SEO_IDEAL_MIN_CHARS = 2000;
+const SEO_IDEAL_MAX_CHARS = 3000;
+const SEO_MIN_PHOTOS = 6;
+
+function buildSeoChecklist(post, s) {
+  const charCount = computeCharCount(post);
+  const items = [];
+
+  if (charCount >= SEO_IDEAL_MIN_CHARS && charCount <= SEO_IDEAL_MAX_CHARS + 500) {
+    items.push({ level: 'good', text: `본문 분량 ${charCount}자 — 상위 노출 글 평균(2,000~3,000자) 수준이에요.` });
+  } else if (charCount >= SEO_MIN_CHARS) {
+    items.push({ level: 'warn', text: `본문 분량 ${charCount}자 — 최소 기준(1,500자)은 넘었지만, 2,000~3,000자면 더 유리해요.` });
+  } else {
+    items.push({ level: 'bad', text: `본문 분량 ${charCount}자 — 최소 권장 기준(1,500자)에 못 미쳐요. 내용을 더 추가해보세요.` });
+  }
+
+  const photoCount = s.photos.length;
+  if (photoCount >= SEO_MIN_PHOTOS) {
+    items.push({ level: 'good', text: `직접 촬영 사진 ${photoCount}장 — 권장 기준(6장 이상)을 충족했어요.` });
+  } else {
+    items.push({ level: 'warn', text: `직접 촬영 사진 ${photoCount}장 — 6장 이상이면 D.I.A.+ 평가에 더 유리해요.` });
+  }
+
+  if (post.toc.length >= 2) {
+    items.push({ level: 'good', text: `소제목 ${post.toc.length}개로 목차가 구성돼 있어요.` });
+  } else {
+    items.push({ level: 'warn', text: '소제목이 1개 이하예요. 내용을 2개 이상 섹션으로 나누면 구조화 평가에 유리해요.' });
+  }
+
+  const hasFactsBox = post.sections.some((sec) => sec.blocks.some((b) => b.type === 'infobox'));
+  items.push(hasFactsBox
+    ? { level: 'good', text: '기본 정보(주소·가격 등) 박스가 포함돼 있어요.' }
+    : { level: 'warn', text: '기본 정보 박스가 없어요. 첫 소제목에 주소·가격 등 사실 정보를 추가하면 좋아요.' });
+
+  const allText = [...post.introParas, ...post.sections.flatMap((sec) => sec.blocks.filter((b) => b.type === 'text').map((b) => b.text))].join(' ');
+  items.push(/[?？]/.test(allText)
+    ? { level: 'good', text: '궁금증을 유발하는 질문형 문장이 있어요 — 체류시간에 도움이 돼요.' }
+    : { level: 'warn', text: '질문형 문장이 없어요. "~는 어땠을까요?" 같은 문장을 하나 넣으면 체류시간에 도움이 돼요.' });
+
+  return items;
+}
+
+function renderSeoChecklist(post, s) {
+  const el = document.getElementById('seoChecklist');
+  if (!el) return;
+  const items = buildSeoChecklist(post, s);
+  const iconMap = { good: '✅', warn: '⚠️', bad: '❌' };
+  el.hidden = false;
+  el.innerHTML = `<div class="seo-title">📊 네이버 SEO 체크리스트 (이 글 기준)</div>`
+    + items.map((it) => `<div class="seo-item seo-${it.level}"><span class="seo-icon">${iconMap[it.level]}</span><span>${escapeHtml(it.text)}</span></div>`).join('');
+}
+
 const MODE_INDICATOR_MAP = {
   'ai-researched': { text: '🔎 현재 결과: AI 검색·리서치 기반으로 작성됨', cls: 'mode-ai' },
   'ai': { text: '✨ 현재 결과: AI 다듬기 적용됨 (검색 없이 메모만 사용)', cls: 'mode-ai' },
@@ -691,9 +757,8 @@ function renderPostToDom(post) {
   };
   const sourceBadge = sourceBadgeMap[post.source] || sourceBadgeMap.template;
 
-  const charCount = post.introParas.join('').length
-    + post.sections.reduce((sum, sec) => sum + sec.blocks.reduce((s2, b) => s2 + blockTextLength(b), 0), 0)
-    + post.summarySentences.join('').length;
+  const charCount = computeCharCount(post);
+  renderSeoChecklist(post, state);
 
   el.innerHTML = `
     <div class="title-choices">${titleChoices}</div>
@@ -888,7 +953,8 @@ function summarizeInput(s) {
 
 const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인생 맛집" 남발 등)과 이모지 남발을 피하고, 담백하고 자연스러운 문체로 쓸 것
 - 지역·장소명·키워드를 억지스럽지 않게 자연스럽게 본문에 녹여 검색 노출에 도움이 되도록 할 것
-- 전체 분량에는 엄격한 글자수 제한을 두지 않는다. 취재 노트와 overallNotes가 풍부하면 소제목을 6~9개까지 늘려 실제 파워블로거의 후기처럼 충실하고 상세하게 쓰고, 정보가 적으면 2~4개 정도로 간결하게 쓸 것
+- 2026년 네이버 검색은 체류시간을 핵심 랭킹 요소로 본다. 본문(도입부+섹션+총평 합산) 분량은 최소 1,500자 이상, 가능하면 2,000~3,000자를 목표로 쓸 것. 취재 노트와 overallNotes가 풍부하면 소제목을 6~9개까지 늘려 실제 파워블로거의 후기처럼 충실하고 상세하게 쓰고, 정보가 적으면 2~4개 정도로 간결하게 쓸 것
+- 글 전체에 "~는 어땠을까요?", "~가 궁금하지 않으신가요?" 같은 궁금증을 유발하는 질문형 문장을 최소 1개는 자연스럽게 포함시켜서, 읽는 사람이 답을 확인하려고 끝까지 스크롤하게 만들 것 (억지스럽게 여러 번 넣지 말고 자연스러운 곳에 한두 번만)
 - 첫 소제목은 가능하면 "기본 정보"에 해당하는 섹션으로 구성해서, 그 섹션의 facts 필드에 확인된 사실을 key-value로 정리할 것 — 맛집/여행/공연은 주소·전화번호·영업시간/공연일시·가격·정기휴무 등, 제품은 제품명·모델명·가격·주요 스펙(사양)·구성품·제조사/판매처 등. 확인된 사실이 없으면 이 섹션은 생략할 것
 - 가능하면 장소·인물·단체의 배경(이력, 유명해진 계기, 역사 등)을 다루는 소제목을 하나 포함할 것 (취재 노트에 근거가 있을 때만. 근거 없이 지어내지 말 것)
 - 코스 옵션, 프로그램/세트리스트, 방문 팁처럼 목록으로 정리하는 게 자연스러운 내용은 해당 섹션의 list 필드에 배열로 담을 것. 항목이 "용량/구간/단계"처럼 이름과 설명으로 나뉘는 내용이면 "이름 : 설명 문장." 형식(콜론 앞뒤 띄어쓰기, 끝에 마침표)으로 한 항목씩 작성할 것

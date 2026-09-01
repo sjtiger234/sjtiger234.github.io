@@ -16,6 +16,7 @@
   --accent-dim: rgba(30,111,92,.10);
   --accent-border: rgba(30,111,92,.30);
   --danger: #C4402F;
+  --warn: #B8860B;
   --radius: 10px;
   --shadow: 0 2px 14px rgba(15,40,70,.06), 0 1px 3px rgba(0,0,0,.04);
   --sans: "Noto Sans KR", sans-serif;
@@ -226,6 +227,20 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent-border);
 
 .action-row { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 6px; }
 .privacy-note { font-size: .76rem; color: var(--text-3); line-height: 1.5; }
+
+/* ---------- 채널(C-Rank) 팁 ---------- */
+.channel-tips { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--surface-2); }
+.channel-tips summary { font-size: .82rem; font-weight: 700; color: var(--text-2); cursor: pointer; }
+.channel-tips ul { margin: 8px 0 0; padding-left: 18px; font-size: .78rem; color: var(--text-3); line-height: 1.6; }
+
+/* ---------- SEO 체크리스트 ---------- */
+.seo-checklist { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 5px; }
+.seo-checklist .seo-title { font-size: .8rem; font-weight: 700; color: var(--text-2); margin-bottom: 2px; }
+.seo-item { display: flex; gap: 6px; align-items: baseline; font-size: .8rem; color: var(--text-2); }
+.seo-item .seo-icon { flex: 0 0 auto; }
+.seo-item.seo-good .seo-icon { color: var(--accent); }
+.seo-item.seo-warn .seo-icon { color: var(--warn); }
+.seo-item.seo-bad .seo-icon { color: var(--danger); }
 
 /* ---------- 미리보기 ---------- */
 .preview-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }

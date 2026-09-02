@@ -250,6 +250,20 @@ async function decodeToBitmap(file) {
   return null;
 }
 
+function bitmapToDataUrl(bitmap, maxDim, quality) {
+  let { width, height } = bitmap;
+  if (width > maxDim || height > maxDim) {
+    const scale = maxDim / Math.max(width, height);
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
 // FileReader.readAsDataURL()은 파일의 File.type을 그대로 data URL의 MIME 부분에
 // 써넣는다("data:<type>;base64,..."). 드래그로 여러 파일을 한 번에 놓았을 때
 // 크롬이 File.type을 빈 문자열로 넘기는 파일은 "data:;base64,..."처럼 MIME이
@@ -257,28 +271,28 @@ async function decodeToBitmap(file) {
 // createImageBitmap()은 File.type이 아니라 실제 바이트를 보고 디코딩하므로 이
 // 문제를 근본적으로 피할 수 있다. 여기서 나온 결과를 캔버스에 그려 다시
 // "image/jpeg"로 인코딩하면 항상 올바른 MIME이 붙은 data URL이 만들어진다.
-async function fileToResizedDataUrl(file, maxDim, quality) {
+//
+// 원본(디코딩/HEIC 변환)은 파일당 딱 한 번만 하고, 본문용/썸네일용 두 크기는
+// 그 결과를 재사용해서 만든다 — 예전에는 크기별로 각각 디코딩을 다시 해서,
+// HEIC처럼 디코딩 자체가 무거운 파일에서 처리 시간이 두 배로 걸렸다.
+async function fileToDataUrls(file, mainMaxDim, mainQuality, thumbMaxDim, thumbQuality) {
   const bitmap = await decodeToBitmap(file);
-  if (!bitmap) {
-    // 마지막 폴백: 예전 방식. 이마저 디코딩 못 할 형식이면 호출 쪽에서 실패로 처리된다.
-    const raw = await readFileAsDataUrl(file);
-    return resizeImageForApi(raw, maxDim, quality);
-  }
-  try {
-    let { width, height } = bitmap;
-    if (width > maxDim || height > maxDim) {
-      const scale = maxDim / Math.max(width, height);
-      width = Math.round(width * scale);
-      height = Math.round(height * scale);
+  if (bitmap) {
+    try {
+      return {
+        dataUrl: bitmapToDataUrl(bitmap, mainMaxDim, mainQuality),
+        thumbDataUrl: bitmapToDataUrl(bitmap, thumbMaxDim, thumbQuality),
+      };
+    } finally {
+      bitmap.close();
     }
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
-    return canvas.toDataURL('image/jpeg', quality);
-  } finally {
-    bitmap.close();
   }
+  // 마지막 폴백(구형 브라우저 등 극히 드문 경우): 예전 방식으로 두 번 다시 시도한다.
+  const raw = await readFileAsDataUrl(file);
+  return {
+    dataUrl: await resizeImageForApi(raw, mainMaxDim, mainQuality),
+    thumbDataUrl: await resizeImageForApi(raw, thumbMaxDim, thumbQuality),
+  };
 }
 
 // Windows 탐색기에서 여러 파일을 한 번에 드래그해서 놓으면, 크롬이 첫 번째 파일만
@@ -321,8 +335,8 @@ async function addPhotos(fileList) {
     if (countEl) countEl.textContent = `사진 불러오는 중... (${i + 1}/${files.length})`;
     const file = files[i];
     try {
-      const dataUrl = await fileToResizedDataUrl(file, MAIN_PHOTO_MAX_DIM, MAIN_PHOTO_QUALITY);
-      const thumbDataUrl = await fileToResizedDataUrl(file, THUMB_MAX_DIM, THUMB_QUALITY);
+      const { dataUrl, thumbDataUrl } = await fileToDataUrls(
+        file, MAIN_PHOTO_MAX_DIM, MAIN_PHOTO_QUALITY, THUMB_MAX_DIM, THUMB_QUALITY);
       newPhotos.push({ id: uid('photo'), name: file.name, dataUrl, thumbDataUrl, caption: '' });
     } catch (e) {
       failed++;

@@ -193,6 +193,39 @@ function readFileAsDataUrl(file) {
   });
 }
 
+// FileReader.readAsDataURL()은 파일의 File.type을 그대로 data URL의 MIME 부분에
+// 써넣는다("data:<type>;base64,..."). 드래그로 여러 파일을 한 번에 놓았을 때
+// 크롬이 File.type을 빈 문자열로 넘기는 파일은 "data:;base64,..."처럼 MIME이
+// 빠진 data URL이 되고, <img>는 이걸 실제 내용과 무관하게 깨진 이미지로 표시한다.
+// createImageBitmap()은 File.type이 아니라 실제 바이트를 보고 디코딩하므로 이
+// 문제를 근본적으로 피할 수 있다. 여기서 나온 결과를 캔버스에 그려 다시
+// "image/jpeg"로 인코딩하면 항상 올바른 MIME이 붙은 data URL이 만들어진다.
+async function fileToResizedDataUrl(file, maxDim, quality) {
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch (e) {
+    // createImageBitmap 자체가 없거나(구형 브라우저) 실패하면 예전 방식으로 폴백
+    const raw = await readFileAsDataUrl(file);
+    return resizeImageForApi(raw, maxDim, quality);
+  }
+  try {
+    let { width, height } = bitmap;
+    if (width > maxDim || height > maxDim) {
+      const scale = maxDim / Math.max(width, height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+    return canvas.toDataURL('image/jpeg', quality);
+  } finally {
+    bitmap.close();
+  }
+}
+
 // Windows 탐색기에서 여러 파일을 한 번에 드래그해서 놓으면, 크롬이 첫 번째 파일만
 // 정상적인 File.type(예: "image/jpeg")을 채워주고 나머지는 빈 문자열로 넘기는 경우가
 // 있다(브라우저의 알려진 동작). type만 보고 걸러내면 그 나머지가 전부 "이미지 아님"으로
@@ -233,9 +266,8 @@ async function addPhotos(fileList) {
     if (countEl) countEl.textContent = `사진 불러오는 중... (${i + 1}/${files.length})`;
     const file = files[i];
     try {
-      const original = await readFileAsDataUrl(file);
-      const dataUrl = await resizeImageForApi(original, MAIN_PHOTO_MAX_DIM, MAIN_PHOTO_QUALITY);
-      const thumbDataUrl = await resizeImageForApi(original, THUMB_MAX_DIM, THUMB_QUALITY);
+      const dataUrl = await fileToResizedDataUrl(file, MAIN_PHOTO_MAX_DIM, MAIN_PHOTO_QUALITY);
+      const thumbDataUrl = await fileToResizedDataUrl(file, THUMB_MAX_DIM, THUMB_QUALITY);
       newPhotos.push({ id: uid('photo'), name: file.name, dataUrl, thumbDataUrl, caption: '' });
     } catch (e) {
       failed++;

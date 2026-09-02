@@ -207,8 +207,14 @@ const THUMB_QUALITY = 0.75;
 // 느려지고 마치 멈춘 것처럼 보인다. 그래서 모든 파일을 다 읽은 뒤 딱 한 번만
 // 렌더링한다. 진행 상황은 photoCount 텍스트로 안내한다.
 async function addPhotos(fileList) {
-  const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
-  if (files.length === 0) return;
+  const allFiles = Array.from(fileList);
+  const files = allFiles.filter((f) => f.type.startsWith('image/'));
+  console.log(`[사진 추가 시작] 전달된 파일 ${allFiles.length}개 중 이미지로 인식된 파일 ${files.length}개`,
+    allFiles.map((f) => ({ name: f.name, type: f.type, size: f.size })));
+  if (files.length === 0) {
+    if (allFiles.length > 0) flashStatus('선택하신 파일이 이미지 형식으로 인식되지 않았어요. (콘솔에 상세 로그를 남겼어요)');
+    return;
+  }
   const countEl = document.getElementById('photoCount');
   const newPhotos = [];
   let failed = 0;
@@ -222,10 +228,12 @@ async function addPhotos(fileList) {
       newPhotos.push({ id: uid('photo'), name: file.name, dataUrl, thumbDataUrl, caption: '' });
     } catch (e) {
       failed++;
+      console.error(`[사진 추가 실패] ${file.name}:`, e);
     }
   }
   state.photos.push(...newPhotos);
   renderPhotos();
+  console.log(`[사진 추가 완료] 이번에 ${newPhotos.length}장 추가, 실패 ${failed}장, 전체 ${state.photos.length}장`);
   if (failed > 0) flashStatus(`사진 ${failed}장을 불러오지 못했어요. 파일 형식을 확인해주세요.`);
 }
 
@@ -1340,7 +1348,11 @@ function bindForm() {
   document.getElementById('nicknameInput').oninput = (e) => { state.nickname = e.target.value; saveDraft(); };
   document.getElementById('signoffInput').oninput = (e) => { state.signoffText = e.target.value; saveDraft(); };
 
-  document.getElementById('photoAddInput').onchange = (e) => { addPhotos(e.target.files); e.target.value = ''; };
+  document.getElementById('photoAddInput').onchange = (e) => {
+    console.log(`[사진 추가 버튼] input.files 개수: ${e.target.files.length}`);
+    addPhotos(e.target.files);
+    e.target.value = '';
+  };
 
   const photoDropZone = document.getElementById('photoDropZone');
   ['dragenter', 'dragover'].forEach((evt) => {
@@ -1359,7 +1371,28 @@ function bindForm() {
   });
   photoDropZone.addEventListener('drop', (e) => {
     const files = e.dataTransfer && e.dataTransfer.files;
+    console.log(`[사진 드롭] dataTransfer.files 개수: ${files ? files.length : 0}`);
     if (files && files.length) addPhotos(files);
+  });
+
+  // 탐색기에서 파일을 복사(Ctrl+C)한 뒤 화면에 붙여넣기(Ctrl+V)하는 방식도 지원한다.
+  // 텍스트 입력칸에 글자를 붙여넣는 일반적인 붙여넣기는 건드리지 않고,
+  // 클립보드에 이미지 파일이 실제로 담겨 있을 때만 사진 추가로 처리한다.
+  document.addEventListener('paste', (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    const files = [];
+    for (const item of items) {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        const f = item.getAsFile();
+        if (f) files.push(f);
+      }
+    }
+    if (files.length > 0) {
+      e.preventDefault();
+      console.log(`[사진 붙여넣기] 클립보드 이미지 개수: ${files.length}`);
+      addPhotos(files);
+    }
   });
 
   document.querySelectorAll('.star-btn').forEach((btn) => {

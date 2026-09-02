@@ -193,6 +193,63 @@ function readFileAsDataUrl(file) {
   });
 }
 
+// 파일의 앞 16바이트(매직 넘버)로 실제 이미지 형식을 판별한다. 확장자나
+// File.type이 잘못됐거나 비어 있어도 실제 내용을 근거로 정확히 판별할 수 있다.
+// 특히 아이폰/일부 안드로이드 기본 사진 형식인 HEIC/HEIF는 크롬이 Windows에서
+// 디코딩을 지원하지 않아 File.type도 비어 있고 createImageBitmap도 실패한다.
+async function sniffImageFormat(file) {
+  try {
+    const buf = await file.slice(0, 16).arrayBuffer();
+    const b = new Uint8Array(buf);
+    const hex4 = Array.from(b.slice(0, 4)).map((x) => x.toString(16).padStart(2, '0')).join('');
+    if (hex4.startsWith('ffd8ff')) return 'JPEG';
+    if (hex4 === '89504e47') return 'PNG';
+    if (hex4 === '47494638') return 'GIF';
+    if (hex4 === '52494646') return 'WEBP/RIFF';
+    if (String.fromCharCode(b[4], b[5], b[6], b[7]) === 'ftyp') {
+      return `HEIC/HEIF(brand:${String.fromCharCode(b[8], b[9], b[10], b[11])})`;
+    }
+    return `알수없음(${hex4})`;
+  } catch (e) {
+    return '판별실패';
+  }
+}
+
+// heic2any(WASM 기반 HEIC 디코더, index.html에서 CDN으로 로드)를 이용해
+// HEIC/HEIF 파일을 브라우저가 다룰 수 있는 JPEG로 변환한다. 라이브러리가
+// 로드되지 않았거나 변환에 실패하면 null을 반환한다.
+async function tryConvertHeicToJpegBlob(file) {
+  if (typeof heic2any !== 'function') return null;
+  try {
+    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+    return Array.isArray(result) ? result[0] : result;
+  } catch (e) {
+    console.warn(`[HEIC 변환 실패] ${file.name}:`, e);
+    return null;
+  }
+}
+
+// File.type이 아니라 실제 바이트를 보고 디코딩하는 createImageBitmap을 우선
+// 사용한다. 이게 실패하면(주로 HEIC/HEIF) heic2any로 JPEG 변환을 시도하고,
+// 그래도 안 되면 예전 방식(FileReader + <img>)으로 마지막 시도를 한다.
+async function decodeToBitmap(file) {
+  try {
+    return await createImageBitmap(file);
+  } catch (e) {
+    const fmt = await sniffImageFormat(file);
+    console.warn(`[사진 디코딩 실패 1차] ${file.name} (실제 형식 추정: ${fmt}):`, e.message || e);
+  }
+  const converted = await tryConvertHeicToJpegBlob(file);
+  if (converted) {
+    try {
+      return await createImageBitmap(converted);
+    } catch (e2) {
+      console.warn(`[HEIC 변환 후에도 디코딩 실패] ${file.name}:`, e2.message || e2);
+    }
+  }
+  return null;
+}
+
 // FileReader.readAsDataURL()은 파일의 File.type을 그대로 data URL의 MIME 부분에
 // 써넣는다("data:<type>;base64,..."). 드래그로 여러 파일을 한 번에 놓았을 때
 // 크롬이 File.type을 빈 문자열로 넘기는 파일은 "data:;base64,..."처럼 MIME이
@@ -201,11 +258,9 @@ function readFileAsDataUrl(file) {
 // 문제를 근본적으로 피할 수 있다. 여기서 나온 결과를 캔버스에 그려 다시
 // "image/jpeg"로 인코딩하면 항상 올바른 MIME이 붙은 data URL이 만들어진다.
 async function fileToResizedDataUrl(file, maxDim, quality) {
-  let bitmap;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch (e) {
-    // createImageBitmap 자체가 없거나(구형 브라우저) 실패하면 예전 방식으로 폴백
+  const bitmap = await decodeToBitmap(file);
+  if (!bitmap) {
+    // 마지막 폴백: 예전 방식. 이마저 디코딩 못 할 형식이면 호출 쪽에서 실패로 처리된다.
     const raw = await readFileAsDataUrl(file);
     return resizeImageForApi(raw, maxDim, quality);
   }

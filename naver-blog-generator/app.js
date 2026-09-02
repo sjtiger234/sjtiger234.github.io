@@ -193,10 +193,19 @@ function readFileAsDataUrl(file) {
   });
 }
 
+// 요즘 휴대폰 사진은 장당 5~15MB가 흔해서, 원본 그대로 여러 장(20~30장)을 메모리에
+// 들고 있으면 브라우저가 느려지거나 탭이 죽을 수 있다. 그래서 등록 시점에 블로그
+// 게시에 충분한 해상도(장변 1920px)로 한 번 줄여서 저장하고, 원본 바이트는 들고
+// 있지 않는다. 화면 표시는 이보다 더 작은 별도 썸네일(THUMB_*)을 써서 가볍게 한다.
+const MAIN_PHOTO_MAX_DIM = 1920;
+const MAIN_PHOTO_QUALITY = 0.85;
+const THUMB_MAX_DIM = 480;
+const THUMB_QUALITY = 0.75;
+
 // 사진을 한 장씩 읽을 때마다 renderPhotos()로 전체 목록을 다시 그리면, 이미 추가된
-// 원본 화질 사진들까지 매번 다시 디코딩해야 해서 장수가 많을수록(예: 20장 이상)
-// 기하급수적으로 느려지고 마치 멈춘 것처럼 보인다. 그래서 모든 파일을 다 읽은 뒤
-// 딱 한 번만 렌더링한다. 진행 상황은 photoCount 텍스트로 안내한다.
+// 사진들까지 매번 다시 디코딩해야 해서 장수가 많을수록(예: 20장 이상) 기하급수적으로
+// 느려지고 마치 멈춘 것처럼 보인다. 그래서 모든 파일을 다 읽은 뒤 딱 한 번만
+// 렌더링한다. 진행 상황은 photoCount 텍스트로 안내한다.
 async function addPhotos(fileList) {
   const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
   if (files.length === 0) return;
@@ -207,8 +216,9 @@ async function addPhotos(fileList) {
     if (countEl) countEl.textContent = `사진 불러오는 중... (${i + 1}/${files.length})`;
     const file = files[i];
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      const thumbDataUrl = await resizeImageForApi(dataUrl, 480, 0.75);
+      const original = await readFileAsDataUrl(file);
+      const dataUrl = await resizeImageForApi(original, MAIN_PHOTO_MAX_DIM, MAIN_PHOTO_QUALITY);
+      const thumbDataUrl = await resizeImageForApi(original, THUMB_MAX_DIM, THUMB_QUALITY);
       newPhotos.push({ id: uid('photo'), name: file.name, dataUrl, thumbDataUrl, caption: '' });
     } catch (e) {
       failed++;
@@ -356,7 +366,7 @@ function assignPhotosToSections(photos, sections) {
 
 /* ---------- 사진 실제 분석용 (Gemini 비전) ---------- */
 
-const MAX_ANALYZE_PHOTOS = 16;
+const MAX_ANALYZE_PHOTOS = 30;
 
 function pickPhotosForAnalysis(photos, max = MAX_ANALYZE_PHOTOS) {
   if (photos.length <= max) return photos;

@@ -126,18 +126,6 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent-border);
 .star-btn.active { color: #E0A93C; }
 
 /* ---------- 사진 업로드 ---------- */
-.icon-btn {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  width: 26px; height: 26px;
-  font-size: .75rem;
-  cursor: pointer;
-  color: var(--text-2);
-}
-.icon-btn.danger { color: var(--danger); }
-.icon-btn:hover { background: var(--surface-2); }
-
 .photo-zone {
   display: flex;
   flex-direction: column;
@@ -180,6 +168,7 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent-border);
 .photo-thumb-actions { display: flex; align-items: center; justify-content: space-between; font-size: .7rem; }
 .photo-thumb-actions button { background: none; border: none; cursor: pointer; color: var(--text-2); font-size: .78rem; }
 .photo-thumb-actions button.danger { color: var(--danger); }
+.guideline-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 
 /* ---------- AI 패널 ---------- */
 .ai-panel {
@@ -201,9 +190,6 @@ input:focus, textarea:focus { outline: none; border-color: var(--accent-border);
 .ai-settings-body.open { display: flex; }
 .ai-help-text { font-size: .78rem; color: var(--text-2); line-height: 1.6; }
 .ai-help-text a { color: var(--accent); }
-.key-input-row { display: flex; gap: 6px; }
-.key-input-row input { flex: 1; }
-.key-input-row .icon-btn { width: auto; padding: 0 10px; height: auto; }
 
 /* ---------- 버튼 ---------- */
 .btn-primary, .btn-secondary {

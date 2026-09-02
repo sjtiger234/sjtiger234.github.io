@@ -193,6 +193,17 @@ function readFileAsDataUrl(file) {
   });
 }
 
+// Windows 탐색기에서 여러 파일을 한 번에 드래그해서 놓으면, 크롬이 첫 번째 파일만
+// 정상적인 File.type(예: "image/jpeg")을 채워주고 나머지는 빈 문자열로 넘기는 경우가
+// 있다(브라우저의 알려진 동작). type만 보고 걸러내면 그 나머지가 전부 "이미지 아님"으로
+// 판정돼 버려서, 확장자로도 한 번 더 확인해 이런 경우를 놓치지 않게 한다.
+const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|heic|heif|avif|tiff?)$/i;
+function looksLikeImageFile(f) {
+  if (f.type && f.type.startsWith('image/')) return true;
+  if (!f.type && IMAGE_EXT_RE.test(f.name || '')) return true;
+  return false;
+}
+
 // 요즘 휴대폰 사진은 장당 5~15MB가 흔해서, 원본 그대로 여러 장(20~30장)을 메모리에
 // 들고 있으면 브라우저가 느려지거나 탭이 죽을 수 있다. 그래서 등록 시점에 블로그
 // 게시에 충분한 해상도(장변 1920px)로 한 번 줄여서 저장하고, 원본 바이트는 들고
@@ -208,7 +219,7 @@ const THUMB_QUALITY = 0.75;
 // 렌더링한다. 진행 상황은 photoCount 텍스트로 안내한다.
 async function addPhotos(fileList) {
   const allFiles = Array.from(fileList);
-  const files = allFiles.filter((f) => f.type.startsWith('image/'));
+  const files = allFiles.filter(looksLikeImageFile);
   console.log(`[사진 추가 시작] 전달된 파일 ${allFiles.length}개 중 이미지로 인식된 파일 ${files.length}개`,
     allFiles.map((f) => ({ name: f.name, type: f.type, size: f.size })));
   if (files.length === 0) {

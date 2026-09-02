@@ -6,9 +6,6 @@
 
 const CATEGORY_LABEL = { food: '맛집 후기', travel: '여행 후기', show: '공연 후기', product: '제품 사용 후기' };
 
-// gemini-2.5-flash는 신규 사용자에게 더 이상 제공되지 않음(구글 API 404 안내 기준) — 최신 모델로 교체
-const DEFAULT_AI_MODEL = 'gemini-3.6-flash';
-
 const DEFAULT_SUBTITLES = {
   food:    ['첫인상과 웨이팅', '메뉴 소개', '맛 평가', '가격과 서비스'],
   travel:  ['첫인상', '코스와 동선', '포토스팟', '꿀팁과 정보'],
@@ -172,10 +169,8 @@ let state = {
   signoffText: '다음에도 재미있는 여행. 맛집. 공연 후기로 다시 찾아올께요.^^',
   chosenTitleIndex: 0,
   lastTitleOptions: [],
-  aiEnabled: false,
-  apiKey: '',
-  aiModel: DEFAULT_AI_MODEL,
-  analyzePhotos: true,
+  sponsoredEnabled: false,
+  guidelineImages: [],
 };
 
 let lastAIJson = null;
@@ -391,6 +386,54 @@ function renderPhotos() {
   if (countEl) countEl.textContent = state.photos.length ? `${state.photos.length}장 첨부됨` : '';
 }
 
+/* ---------- 체험단(협찬) 리뷰 안내문 캡처 ---------- */
+/* 포스팅 본문에 들어가는 사진이 아니라, Claude가 참고할 리뷰 안내문 캡처 이미지다.
+   이 앱 자체는 이미지를 분석하지 않으며, "Claude로 작성하기" 프롬프트에 이 캡처도
+   함께 첨부해달라는 안내가 자동으로 추가된다. */
+
+const GUIDELINE_MAX_DIM = 2000;
+const GUIDELINE_QUALITY = 0.85;
+
+async function addGuidelineImages(fileList) {
+  const files = Array.from(fileList).filter(looksLikeImageFile);
+  if (files.length === 0) return;
+  const newImages = [];
+  for (const file of files) {
+    try {
+      const { dataUrl } = await fileToDataUrls(file, GUIDELINE_MAX_DIM, GUIDELINE_QUALITY, GUIDELINE_MAX_DIM, GUIDELINE_QUALITY);
+      newImages.push({ id: uid('guideline'), name: file.name, dataUrl });
+    } catch (e) {
+      console.warn(`[체험단 안내문 캡처 추가 실패] ${file.name}:`, e);
+    }
+  }
+  state.guidelineImages.push(...newImages);
+  renderGuidelineImages();
+}
+
+function removeGuidelineImage(id) {
+  state.guidelineImages = state.guidelineImages.filter((g) => g.id !== id);
+  renderGuidelineImages();
+}
+
+function renderGuidelineImages() {
+  const wrap = document.getElementById('guidelineThumbs');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  state.guidelineImages.forEach((g) => {
+    const t = document.createElement('div');
+    t.className = 'photo-thumb';
+    t.innerHTML = `
+      <img src="${g.dataUrl}" alt="${escapeAttr(g.name)}">
+      <div class="photo-thumb-actions">
+        <span class="guideline-name">${escapeHtml(g.name)}</span>
+        <button type="button" data-act="del" class="danger">✕</button>
+      </div>
+    `;
+    t.querySelector('[data-act="del"]').onclick = () => removeGuidelineImage(g.id);
+    wrap.appendChild(t);
+  });
+}
+
 /* ---------- 유틸 ---------- */
 
 function escapeHtml(str = '') {
@@ -484,18 +527,8 @@ function assignPhotosToSections(photos, sections) {
   return result;
 }
 
-/* ---------- 사진 실제 분석용 (Gemini 비전) ---------- */
-
-const MAX_ANALYZE_PHOTOS = 30;
-
-function pickPhotosForAnalysis(photos, max = MAX_ANALYZE_PHOTOS) {
-  if (photos.length <= max) return photos;
-  const step = photos.length / max;
-  const picked = [];
-  for (let i = 0; i < max; i++) picked.push(photos[Math.floor(i * step)]);
-  return picked;
-}
-
+// 아래 resizeImageForApi는 createImageBitmap을 못 쓰는 구형 브라우저를 위한
+// fileToDataUrls()의 마지막 폴백 리사이즈에 쓰인다.
 function resizeImageForApi(dataUrl, maxDim = 1024, quality = 0.82) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -516,17 +549,6 @@ function resizeImageForApi(dataUrl, maxDim = 1024, quality = 0.82) {
     img.onerror = () => resolve(dataUrl);
     img.src = dataUrl;
   });
-}
-
-function dataUrlToInlinePart(dataUrl) {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.*)$/);
-  return match ? { mimeType: match[1], data: match[2] } : null;
-}
-
-async function buildImagePartsForAnalysis(photos) {
-  const selected = pickPhotosForAnalysis(photos);
-  const resized = await Promise.all(selected.map((p) => resizeImageForApi(p.dataUrl)));
-  return resized.map(dataUrlToInlinePart).filter(Boolean);
 }
 
 function buildSignatureLine(s) {
@@ -864,10 +886,8 @@ function renderSeoChecklist(post, s) {
 }
 
 const MODE_INDICATOR_MAP = {
-  'ai-researched': { text: '🔎 현재 결과: AI 검색·리서치 기반으로 작성됨', cls: 'mode-ai' },
-  'ai': { text: '✨ 현재 결과: AI 다듬기 적용됨 (검색 없이 메모만 사용)', cls: 'mode-ai' },
   'claude-manual': { text: '🤖 현재 결과: Claude 붙여넣기 기반으로 작성됨', cls: 'mode-ai' },
-  'template': { text: '📝 현재 결과: 규칙 기반 초안 (AI 미사용 — 정형 문구가 섞여 있어요)', cls: '' },
+  'template': { text: '📝 현재 결과: 규칙 기반 초안 (정형 문구가 섞여 있어요)', cls: '' },
 };
 
 function updateModeIndicator(post) {
@@ -912,8 +932,6 @@ function renderPostToDom(post) {
   const tagsHtml = `<div class="tags-line">${post.tags.map((t) => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join(' ')}</div>`;
 
   const sourceBadgeMap = {
-    'ai-researched': '<span class="source-badge ai">🔎 AI 검색·리서치 기반 작성</span>',
-    'ai': '<span class="source-badge ai">✨ AI 다듬기 적용 (검색 없음)</span>',
     'claude-manual': '<span class="source-badge ai">🤖 Claude 붙여넣기 기반</span>',
     'template': '<span class="source-badge">규칙 기반 초안</span>',
   };
@@ -1070,32 +1088,7 @@ function loadDraft() {
   } catch (e) { return false; }
 }
 
-/* ---------- AI(Gemini) 연동 ---------- */
-
-const AI_SETTINGS_KEY = 'naver-blog-generator-ai-settings-v1';
-
-function saveAISettings() {
-  try {
-    localStorage.setItem(AI_SETTINGS_KEY, JSON.stringify({
-      aiEnabled: state.aiEnabled, apiKey: state.apiKey, aiModel: state.aiModel, analyzePhotos: state.analyzePhotos,
-    }));
-  } catch (e) { /* 용량 초과 등은 무시 */ }
-}
-
-function loadAISettings() {
-  try {
-    const raw = localStorage.getItem(AI_SETTINGS_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
-    if (typeof saved.aiEnabled === 'boolean') state.aiEnabled = saved.aiEnabled;
-    if (typeof saved.apiKey === 'string') state.apiKey = saved.apiKey;
-    if (typeof saved.aiModel === 'string' && saved.aiModel) {
-      // 예전 기본값(gemini-2.5-flash)이 저장돼 있으면 최신 기본 모델로 자동 승격
-      state.aiModel = saved.aiModel === 'gemini-2.5-flash' ? DEFAULT_AI_MODEL : saved.aiModel;
-    }
-    if (typeof saved.analyzePhotos === 'boolean') state.analyzePhotos = saved.analyzePhotos;
-  } catch (e) { /* 무시 */ }
-}
+/* ---------- Claude 프롬프트용 데이터 정리 ---------- */
 
 function summarizeInput(s) {
   return {
@@ -1133,84 +1126,9 @@ const WRITING_PRINCIPLES = `- 광고성 과장 표현("무조건 강추", "인�
   문장을 다 쓴 뒤, 마지막 글자가 "다."로 끝나는 문장이 하나라도 있는지 스스로 다시 확인하고, 있다면 전부 "~요/~습니다"체로 고쳐서 최종 답변에는 절대 남기지 말 것. 실제 파워블로거 글(예: "어제 ~보고 왔어요. ~빛이 났습니다.")은 처음부터 끝까지 이 존댓말체로만 쓰여 있다.
   단, 한쪽으로 치우치면 안 된다. "~요/~어요"체와 "~습니다/~입니다"체를 전체 글에서 대략 반반 정도 비율로, 두세 문장마다 자연스럽게 번갈아 섞어서 리듬감 있게 쓸 것 — "~요"만 계속 이어지거나 "~습니다"만 계속 이어지지 않도록 할 것.`;
 
-function buildResearchPrompt(s) {
-  const input = summarizeInput(s);
-  return `당신은 네이버 블로그에 올릴 ${CATEGORY_LABEL[s.category]}를 위해 취재하는 리서처입니다. 구글 검색으로 아래 장소/공연에 대한 실제 정보를 최대한 찾아서 정리해주세요.
-
-찾아야 할 정보 (해당되는 것만, "기본 정보" 박스에 쓸 수 있도록 최대한 정확한 값으로):
-- 정확한 위치/주소, 전화번호, 가는 법, 영업시간·정기휴무(또는 공연 일시), 가격대·티켓 가격
-- 대표 메뉴/시그니처, 웨이팅 여부 (맛집) / 코스, 입장료, 추천 동선, 주변 명소 (여행) / 러닝타임, 캐스팅, 공연장 정보, 관람 포인트 (공연) / 정확한 제품명·모델명, 가격, 주요 스펙(사양), 구성품, 제조사·공식 판매처 (제품)
-- 관련 인물·단체·브랜드의 배경 (셰프/연주자/극단/제조사 등의 이력, 유명해진 계기, 수상 경력, 방송 출연 등)
-- 최근 방문객·관람객·구매자들의 공통적인 평가나 특징
-- 사용자가 직접 남긴 아래 메모(실제 경험, overallNotes)
-
-사용자 입력 정보:
-${JSON.stringify(input, null, 2)}
-
-검색으로 확인되지 않는 내용은 추측해서 지어내지 말고, 확인된 사실과 사용자 메모만으로 정리하세요. 결과는 JSON이 아닌 자유로운 한국어 텍스트로, 섹션 구분 없이 취재 노트 형태로 최대한 상세하게 작성해주세요 (이 노트 자체는 나중에 요약될 재료이니 길어도 괜찮습니다).`;
-}
-
-function buildRestructurePrompt(s, researchNotes) {
-  const input = summarizeInput(s);
-  return `당신은 네이버 블로그에 ${CATEGORY_LABEL[s.category]}를 올리는 블로거입니다. 아래 "취재 노트"와 "사용자 입력 정보"를 바탕으로 실제 경험을 진솔하고 밀도 있게 전달하는 한국어 블로그 글을 작성해주세요.
-
-작성 원칙:
-${WRITING_PRINCIPLES}
-- 취재 노트에 없는 내용은 지어내지 말 것
-
-취재 노트:
-"""
-${researchNotes}
-"""
-
-사용자 입력 정보:
-${JSON.stringify(input, null, 2)}
-
-아래 JSON 형식으로만, 다른 설명 없이 응답하세요:
-{
-  "title": "네이버 검색 노출과 클릭을 동시에 노리는, 시선을 끄는 제목 (공백 포함 반드시 35자 이내)",
-  "titleAlternatives": ["대체 제목1", "대체 제목2"],
-  "intro": ["도입부 문단1"],
-  "sections": [
-    { "subtitle": "기본 정보", "facts": [{"label": "주소", "value": "..."}, {"label": "영업시간", "value": "..."}] },
-    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2", "문단3"] },
-    { "subtitle": "소제목", "list": ["항목1", "항목2"], "paragraphs": ["문단1"] }
-  ],
-  "summary": ["총평 문단1", "총평 문단2"],
-  "tags": ["태그1", "태그2"]
-}
-(facts/list는 해당 내용이 있을 때만 넣고, 없으면 필드 자체를 생략하세요)
-
-다시 한번 강조합니다: 답변에 있는 모든 문장은 "~요/~습니다"체로 끝나야 하고 "~다."로 끝나는 문장은 절대 없어야 합니다. 이 대화에 이전 답변이 남아있다면 그 답변의 말투는 무시하고, 지금 이 지침을 우선해서 새로 작성해주세요.`;
-}
-
-function buildFallbackJsonPrompt(s) {
-  const input = summarizeInput(s);
-  return `당신은 네이버 블로그에 ${CATEGORY_LABEL[s.category]}를 올리는 블로거입니다. 아래 JSON 정보를 바탕으로 실제 경험을 진솔하게 전달하는 한국어 블로그 글을 작성해주세요.
-
-작성 원칙:
-${WRITING_PRINCIPLES}
-- 입력에 없는 구체적 사실(가격, 시간, 메뉴명 등)을 지어내지 말 것
-
-입력 정보:
-${JSON.stringify(input, null, 2)}
-
-아래 JSON 형식으로만, 다른 설명 없이 응답하세요:
-{
-  "title": "네이버 검색 노출과 클릭을 동시에 노리는, 시선을 끄는 제목 (공백 포함 반드시 35자 이내)",
-  "titleAlternatives": ["대체 제목1", "대체 제목2"],
-  "intro": ["도입부 문단1"],
-  "sections": [
-    { "subtitle": "기본 정보", "facts": [{"label": "주소", "value": "..."}, {"label": "영업시간", "value": "..."}] },
-    { "subtitle": "소제목", "paragraphs": ["문단1", "문단2", "문단3"] },
-    { "subtitle": "소제목", "list": ["항목1", "항목2"], "paragraphs": ["문단1"] }
-  ],
-  "summary": ["총평 문단1", "총평 문단2"],
-  "tags": ["태그1", "태그2"]
-}
-(facts/list는 해당 내용이 있을 때만 넣고, 없으면 필드 자체를 생략하세요)
-
-다시 한번 강조합니다: 답변에 있는 모든 문장은 "~요/~습니다"체로 끝나야 하고 "~다."로 끝나는 문장은 절대 없어야 합니다. 이 대화에 이전 답변이 남아있다면 그 답변의 말투는 무시하고, 지금 이 지침을 우선해서 새로 작성해주세요.`;
+function buildSponsoredNote(s) {
+  if (!s.sponsoredEnabled || !s.guidelineImages.length) return '';
+  return `\n\n[체험단(협찬) 리뷰 안내] 이 글은 체험단/협찬 리뷰입니다. 이 대화에 리뷰 안내문을 캡처한 이미지가 ${s.guidelineImages.length}장 함께 첨부되어 있을 텐데, 반드시 먼저 꼼꼼히 확인해주세요. 안내문에 명시된 필수 키워드, 필수 해시태그, 필수 문구(예: "본 포스팅은 업체로부터 소정의 원고료/제품을 지원받아 작성되었습니다" 같은 대가성 표기), 최소 사진 개수·글자수, 금지 표현 등의 요구사항을 정확히 파악해서 글에 그대로 반영해주세요. 필수 문구나 해시태그가 있다면 절대 빠뜨리지 말고 안내문에 적힌 표현 그대로 정확히 포함해주세요.`;
 }
 
 function buildClaudePrompt(s) {
@@ -1219,7 +1137,7 @@ function buildClaudePrompt(s) {
 
 웹 검색이 가능하다면, 아래 장소·공연·인물에 대한 실제 정보(정확한 주소, 전화번호, 영업시간·공연일시, 가격, 관련 인물·단체의 이력 등)를 찾아서 반영해주세요. 검색이 불가능한 상황이라면 확인되지 않은 구체적 사실은 지어내지 말고 아래 입력 정보만으로 작성하세요.
 
-이 대화에 사진 파일이 함께 첨부되어 있다면 반드시 한 장씩 직접 살펴보고, 아래 입력 정보의 photoCaptions와 대조해서 각 사진이 어느 소제목에 해당하는지 파악한 뒤, 사진에 실제로 보이는 내용을 그 소제목에 구체적이고 사실적으로 녹여서 써주세요.
+이 대화에 사진 파일이 함께 첨부되어 있다면 반드시 한 장씩 직접 살펴보고, 아래 입력 정보의 photoCaptions와 대조해서 각 사진이 어느 소제목에 해당하는지 파악한 뒤, 사진에 실제로 보이는 내용을 그 소제목에 구체적이고 사실적으로 녹여서 써주세요.${buildSponsoredNote(s)}
 
 작성 원칙:
 ${WRITING_PRINCIPLES}
@@ -1272,36 +1190,6 @@ function importClaudeResult() {
   }
 }
 
-async function callGeminiApi(apiKey, model, prompt, { useSearch = false, jsonMode = false, images = [] } = {}) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const parts = [{ text: prompt }, ...images.map((img) => ({ inline_data: { mime_type: img.mimeType, data: img.data } }))];
-  const body = {
-    contents: [{ role: 'user', parts }],
-    generationConfig: { temperature: 0.9, maxOutputTokens: 8192 },
-  };
-  if (jsonMode) body.generationConfig.responseMimeType = 'application/json';
-  if (useSearch) body.tools = [{ google_search: {} }];
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    let detail = '';
-    try { detail = (await res.json()).error?.message || ''; } catch (e) { /* 무시 */ }
-    if (res.status === 401 && apiKey.trim().startsWith('AQ.')) {
-      throw new Error('구글이 최근 발급하는 "AQ."로 시작하는 새 형식 API 키가 현재 구글 쪽 버그로 REST 요청을 거부하고 있어요(다수 보고된 알려진 이슈). 이 도구의 문제가 아니라 구글 쪽에서 해결해야 하는 문제입니다. AI Studio에서 Standard 키가 있는지 확인하거나, 다른 프로젝트로 새로 발급해보세요.');
-    }
-    throw new Error(`Gemini API 오류 (${res.status})${detail ? ': ' + detail : ''}`);
-  }
-  const data = await res.json();
-  const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('');
-  if (!text) throw new Error('Gemini 응답이 비어있어요.');
-  const queries = data.candidates?.[0]?.groundingMetadata?.webSearchQueries || [];
-  return { text, queries };
-}
-
 function parseAIJson(raw) {
   let text = raw.trim();
   const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -1310,55 +1198,6 @@ function parseAIJson(raw) {
   const end = text.lastIndexOf('}');
   if (start === -1 || end === -1) throw new Error('AI 응답 형식을 이해할 수 없어요.');
   return JSON.parse(text.slice(start, end + 1));
-}
-
-async function generateWithAI() {
-  const btn = document.getElementById('generateBtn');
-  const original = btn.textContent;
-  btn.disabled = true;
-  const model = state.aiModel || DEFAULT_AI_MODEL;
-
-  try {
-    let images = [];
-    if (state.analyzePhotos && state.photos.length) {
-      btn.textContent = '📷 사진 분석 준비 중...';
-      flashStatus('사진을 분석용으로 준비하고 있어요...');
-      images = await buildImagePartsForAnalysis(state.photos);
-    }
-
-    btn.textContent = '🔎 관련 정보 검색 중...';
-    flashStatus('구글 검색으로 관련 정보를 찾고 있어요. 잠시만 기다려주세요...');
-    const research = await callGeminiApi(state.apiKey, model, buildResearchPrompt(state), { useSearch: true });
-
-    btn.textContent = '✨ 글로 정리하는 중...';
-    flashStatus('찾은 정보를 바탕으로 글을 정리하고 있어요...');
-    const restructured = await callGeminiApi(state.apiKey, model, buildRestructurePrompt(state, research.text), { jsonMode: true, images });
-    const json = parseAIJson(restructured.text);
-    lastAIJson = json;
-    renderAIPost(json, 'ai-researched');
-    const q = research.queries;
-    flashStatus(`AI가 검색 정보를 반영해 글을 작성했어요${q.length ? ` (검색어: ${q.slice(0, 3).join(', ')})` : ''}. 사실관계는 꼭 한 번 더 확인해주세요.`);
-    return;
-  } catch (searchErr) {
-    // 검색 연동 실패 시, 검색 없이 메모만으로 다듬기를 시도
-    try {
-      btn.textContent = '✨ AI가 다듬는 중...';
-      flashStatus('검색 연동에 실패해 메모 기반으로 다듬고 있어요...');
-      const images = (state.analyzePhotos && state.photos.length) ? await buildImagePartsForAnalysis(state.photos) : [];
-      const fallback = await callGeminiApi(state.apiKey, model, buildFallbackJsonPrompt(state), { jsonMode: true, images });
-      const json = parseAIJson(fallback.text);
-      lastAIJson = json;
-      renderAIPost(json, 'ai');
-      flashStatus(`검색 없이 메모만으로 문장을 다듬었어요. (검색 실패 사유: ${searchErr.message})`, { persist: true });
-    } catch (fallbackErr) {
-      lastAIJson = null;
-      renderPreview();
-      flashStatus(`⚠️ AI 다듬기에 실패해 규칙 기반 초안을 표시했어요. (${fallbackErr.message})`, { persist: true });
-    }
-  } finally {
-    btn.disabled = false;
-    btn.textContent = original;
-  }
 }
 
 /* ---------- 예시 불러오기 ---------- */
@@ -1377,8 +1216,8 @@ function loadExample() {
   saveDraft();
 }
 
-// 닉네임·서명 문구·AI 설정(API 키 등)은 유지한 채, 이번 포스팅 입력 내용만 비운다.
-// 매번 API 키를 다시 입력하지 않고도 새 글을 빠르게 시작할 수 있도록 하기 위함.
+// 닉네임·서명 문구는 유지한 채, 이번 포스팅 입력 내용(사진·체험단 안내문 포함)만 비운다.
+// 매번 처음부터 다시 입력하지 않고도 새 글을 빠르게 시작할 수 있도록 하기 위함.
 const BLANK_POST_CONTENT = {
   category: 'food',
   place: '', region: '', date: '', companion: '', rating: 0,
@@ -1388,10 +1227,11 @@ const BLANK_POST_CONTENT = {
   summaryNotes: '',
   chosenTitleIndex: 0,
   lastTitleOptions: [],
+  sponsoredEnabled: false,
 };
 
 function resetPostContent() {
-  Object.assign(state, BLANK_POST_CONTENT, { photos: [] });
+  Object.assign(state, BLANK_POST_CONTENT, { photos: [], guidelineImages: [] });
   lastAIJson = null;
   lastPost = null;
   syncFormFromState();
@@ -1436,13 +1276,11 @@ function syncFormFromState() {
   document.getElementById('signoffInput').value = state.signoffText;
   document.querySelectorAll('.star-btn').forEach((b) => b.classList.toggle('active', Number(b.dataset.star) <= state.rating));
 
-  document.getElementById('aiToggle').checked = state.aiEnabled;
-  document.getElementById('apiKeyInput').value = state.apiKey;
-  document.getElementById('aiModelInput').value = state.aiModel;
-  document.getElementById('analyzePhotosToggle').checked = state.analyzePhotos;
-  document.getElementById('aiSettingsBody').classList.toggle('open', state.aiEnabled);
+  document.getElementById('sponsoredToggle').checked = state.sponsoredEnabled;
+  document.getElementById('sponsoredBody').classList.toggle('open', state.sponsoredEnabled);
 
   renderPhotos();
+  renderGuidelineImages();
 }
 
 function bindForm() {
@@ -1518,29 +1356,17 @@ function bindForm() {
 
   document.getElementById('generateBtn').onclick = () => {
     state.chosenTitleIndex = 0;
-    if (state.aiEnabled && state.apiKey.trim()) {
-      generateWithAI();
-    } else {
-      const proceed = confirm(
-        state.aiEnabled
-          ? 'AI 토글은 켜져 있지만 API 키가 비어 있어요.\n\n이 상태로 계속하면 정형 문구가 섞인 "규칙 기반 초안"이 생성됩니다.\n\n계속할까요? (취소를 누르고 "Gemini API 키" 칸을 채운 뒤 다시 시도하시면 AI로 생성됩니다)'
-          : '지금 "AI로 문장 다듬기"가 꺼져 있어요.\n\n이 상태로 계속하면 정형 문구가 섞인 "규칙 기반 초안"이 생성됩니다. (실제 방문 정보 검색·자연스러운 문장은 반영되지 않아요)\n\n계속할까요? (취소를 누르고 위쪽 "✨ AI로 문장 다듬기" 체크박스를 켠 뒤 Gemini 키를 입력하시면 AI로 생성됩니다)'
-      );
-      if (!proceed) return;
-      renderPreview();
-    }
+    renderPreview();
     scrollToPreview();
   };
-  document.getElementById('templateOnlyBtn').onclick = () => { state.chosenTitleIndex = 0; renderPreview(); scrollToPreview(); };
   document.getElementById('exampleBtn').onclick = loadExample;
   document.getElementById('newPostBtn').onclick = () => {
-    if (!confirm('작성 중인 내용을 지우고 새 글을 시작할까요? (닉네임·서명 문구·AI 설정은 그대로 유지돼요)')) return;
+    if (!confirm('작성 중인 내용을 지우고 새 글을 시작할까요? (닉네임·서명 문구는 그대로 유지돼요)')) return;
     resetPostContent();
   };
   document.getElementById('resetBtn').onclick = () => {
-    if (!confirm('입력한 내용과 저장된 API 키를 모두 지울까요?')) return;
+    if (!confirm('입력한 내용을 모두 지울까요?')) return;
     localStorage.removeItem(DRAFT_KEY);
-    localStorage.removeItem(AI_SETTINGS_KEY);
     location.reload();
   };
   document.getElementById('copyRichBtn').onclick = copyRich;
@@ -1550,24 +1376,35 @@ function bindForm() {
   document.getElementById('mobileTabForm').onclick = () => switchMobileTab('form');
   document.getElementById('mobileTabPreview').onclick = () => switchMobileTab('preview');
 
-  document.getElementById('aiToggle').onchange = (e) => {
-    state.aiEnabled = e.target.checked;
-    document.getElementById('aiSettingsBody').classList.toggle('open', state.aiEnabled);
-    saveAISettings();
+  document.getElementById('sponsoredToggle').onchange = (e) => {
+    state.sponsoredEnabled = e.target.checked;
+    document.getElementById('sponsoredBody').classList.toggle('open', state.sponsoredEnabled);
+    saveDraft();
   };
-  const apiKeyInput = document.getElementById('apiKeyInput');
-  apiKeyInput.oninput = (e) => { state.apiKey = e.target.value.trim(); saveAISettings(); };
-  document.getElementById('aiModelInput').oninput = (e) => { state.aiModel = e.target.value.trim() || DEFAULT_AI_MODEL; saveAISettings(); };
-  document.getElementById('analyzePhotosToggle').onchange = (e) => { state.analyzePhotos = e.target.checked; saveAISettings(); };
-  document.getElementById('toggleKeyVisible').onclick = () => {
-    apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+
+  document.getElementById('guidelineAddInput').onchange = (e) => {
+    addGuidelineImages(e.target.files);
+    e.target.value = '';
   };
-  document.getElementById('clearKeyBtn').onclick = () => {
-    state.apiKey = '';
-    apiKeyInput.value = '';
-    saveAISettings();
-    flashStatus('저장된 API 키를 삭제했어요.');
-  };
+  const guidelineDropZone = document.getElementById('guidelineDropZone');
+  ['dragenter', 'dragover'].forEach((evt) => {
+    guidelineDropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      guidelineDropZone.classList.add('drag-over');
+    });
+  });
+  ['dragleave', 'drop'].forEach((evt) => {
+    guidelineDropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      guidelineDropZone.classList.remove('drag-over');
+    });
+  });
+  guidelineDropZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length) addGuidelineImages(files);
+  });
 
   document.getElementById('copyClaudePromptBtn').onclick = copyClaudePrompt;
   document.getElementById('importClaudeResultBtn').onclick = importClaudeResult;
@@ -1588,7 +1425,6 @@ function scrollToPreview() {
 
 function init() {
   loadDraft();
-  loadAISettings();
   syncFormFromState();
   bindForm();
   renderPreview();

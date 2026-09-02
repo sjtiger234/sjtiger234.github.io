@@ -184,16 +184,39 @@ function uid(prefix) { return `${prefix}_${Date.now().toString(36)}_${Math.rando
 
 /* ---------- 사진 처리 (전체 공용 사진 풀) ---------- */
 
-function addPhotos(fileList) {
-  const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
-  files.forEach((file) => {
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
-      state.photos.push({ id: uid('photo'), name: file.name, dataUrl: e.target.result, caption: '' });
-      renderPhotos();
-    };
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+// 사진을 한 장씩 읽을 때마다 renderPhotos()로 전체 목록을 다시 그리면, 이미 추가된
+// 원본 화질 사진들까지 매번 다시 디코딩해야 해서 장수가 많을수록(예: 20장 이상)
+// 기하급수적으로 느려지고 마치 멈춘 것처럼 보인다. 그래서 모든 파일을 다 읽은 뒤
+// 딱 한 번만 렌더링한다. 진행 상황은 photoCount 텍스트로 안내한다.
+async function addPhotos(fileList) {
+  const files = Array.from(fileList).filter((f) => f.type.startsWith('image/'));
+  if (files.length === 0) return;
+  const countEl = document.getElementById('photoCount');
+  const newPhotos = [];
+  let failed = 0;
+  for (let i = 0; i < files.length; i++) {
+    if (countEl) countEl.textContent = `사진 불러오는 중... (${i + 1}/${files.length})`;
+    const file = files[i];
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const thumbDataUrl = await resizeImageForApi(dataUrl, 480, 0.75);
+      newPhotos.push({ id: uid('photo'), name: file.name, dataUrl, thumbDataUrl, caption: '' });
+    } catch (e) {
+      failed++;
+    }
+  }
+  state.photos.push(...newPhotos);
+  renderPhotos();
+  if (failed > 0) flashStatus(`사진 ${failed}장을 불러오지 못했어요. 파일 형식을 확인해주세요.`);
 }
 
 function removePhoto(photoId) {
@@ -219,7 +242,7 @@ function renderPhotos() {
     const t = document.createElement('div');
     t.className = 'photo-thumb';
     t.innerHTML = `
-      <img src="${p.dataUrl}" alt="${escapeAttr(p.name)}">
+      <img src="${p.thumbDataUrl || p.dataUrl}" alt="${escapeAttr(p.name)}">
       <input type="text" class="caption-input" placeholder="캡션(선택)" value="${escapeAttr(p.caption)}">
       <div class="photo-thumb-actions">
         <button type="button" data-act="up">◀</button>
